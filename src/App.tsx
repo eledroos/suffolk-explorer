@@ -301,6 +301,15 @@ export default function App() {
 
   return (
     <div className="app">
+      <div className="brandstrip">
+        <span>
+          a{' '}
+          <a href="https://bigdreams.info" target="_blank" rel="noopener noreferrer">
+            BIG DREAMS
+          </a>{' '}
+          project
+        </span>
+      </div>
       <TopBar
         status={status}
         mode={mode}

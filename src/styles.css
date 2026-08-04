@@ -16,6 +16,7 @@
   --grid: #e1e0d9;
   --axis: #c3c2b7;
   --accent: #2a78d6;
+  --brand: #4a3aa7;
   --good: #0ca30c;
   --warn: #fab219;
   --crit: #d03b3b;
@@ -36,6 +37,7 @@
     --grid: #2c2c2a;
     --axis: #383835;
     --accent: #3987e5;
+    --brand: #9085e9;
     --s1: #3987e5;
     --s2: #d95926;
     --s3: #199e70;
@@ -44,6 +46,7 @@
 }
 
 :root[data-theme='dark'] {
+  --brand: #9085e9;
   color-scheme: dark;
   --surface: #1a1a19;
   --page: #0d0d0d;
@@ -1723,3 +1726,24 @@ input[type='date']:hover {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------- brand strip ---------- */
+.brandstrip {
+  display: flex;
+  justify-content: center;
+  padding: 5px 12px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #cde2fb; /* seq100 on navy */
+  background: #0d366b; /* seq700 navy, same in both themes */
+  user-select: none;
+}
+.brandstrip a {
+  color: #eda100; /* palette yellow, slot 4 */
+  font-weight: 750;
+  text-decoration: none;
+  letter-spacing: 0.18em;
+}
+.brandstrip a:hover { text-decoration: underline; text-underline-offset: 2px; }
+.brandstrip a:focus-visible { outline: 2px solid #eda100; outline-offset: 2px; border-radius: 2px; }
