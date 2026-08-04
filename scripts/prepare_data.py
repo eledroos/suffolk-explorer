@@ -24,7 +24,7 @@ BOOLS = ["filed_in_window", "disposed_in_window"]
 CATS = ["charge_code", "crime_type", "court", "race", "sex", "agency",
         "disposition_code", "disposition_description", "disposition_reason",
         "case_status", "filing_source", "disposition_source",
-        "filed_under", "disposed_under"]
+        "filed_under", "disposed_under", "outcome_class", "prosecutorial_call"]
 
 df = pd.read_csv(CSV, dtype={"icr": "string", "charge_code": "string", "agency": "string"})
 for c in DATES:

@@ -36,6 +36,8 @@ export const COLUMNS: ColumnDef[] = [
   { name: 'disposition_reason',      label: 'Disposition reason',      kind: 'cat',  filterable: true,  groupable: true  },
   { name: 'disposition_source',      label: 'Disposition source file', kind: 'cat',  filterable: true,  groupable: true  },
   { name: 'case_status',             label: 'Case status',             kind: 'cat',  filterable: true,  groupable: true  },
+  { name: 'outcome_class',           label: 'Outcome class',           kind: 'cat',  filterable: true,  groupable: true  },
+  { name: 'prosecutorial_call',      label: 'Prosecutorial call',      kind: 'cat',  filterable: true,  groupable: true  },
   { name: 'filed_in_window',         label: 'Filed in 2022-2025',      kind: 'bool', filterable: false, groupable: false },
   { name: 'disposed_in_window',      label: 'Disposed in 2022-2025',   kind: 'bool', filterable: false, groupable: false },
   { name: 'filed_under',             label: 'Filed under (DA)',        kind: 'cat',  filterable: true,  groupable: true  },
