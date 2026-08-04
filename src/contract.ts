@@ -39,6 +39,7 @@ export const COLUMNS: ColumnDef[] = [
   { name: 'outcome_class',           label: 'Outcome class',           kind: 'cat',  filterable: true,  groupable: true  },
   { name: 'prosecutorial_call',      label: 'Prosecutorial call',      kind: 'cat',  filterable: true,  groupable: true  },
   { name: 'dtp_class',               label: 'Decline-to-prosecute list', kind: 'cat', filterable: true, groupable: true },
+  { name: 'outcome_detail',          label: 'Outcome (detailed)',      kind: 'cat',  filterable: true,  groupable: true  },
   { name: 'filed_in_window',         label: 'Filed in 2022-2025',      kind: 'bool', filterable: false, groupable: false },
   { name: 'disposed_in_window',      label: 'Disposed in 2022-2025',   kind: 'bool', filterable: false, groupable: false },
   { name: 'filed_under',             label: 'Filed under (DA)',        kind: 'cat',  filterable: true,  groupable: true  },
