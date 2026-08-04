@@ -52,7 +52,8 @@ describe('loadDataset', () => {
     expect(ds.dates.filing_date.length).toBe(200_630);
     expect(ds.bools.filed_in_window.length).toBe(200_630);
     expect(ds.ids.case_id.length).toBe(200_630);
-    expect(ds.text.charge_description.length).toBe(200_630);
+    expect(ds.cats.charge_description.codes.length).toBe(200_630);
+    expect(ds.cats.dtp_class.dict.length).toBeGreaterThanOrEqual(4);
   });
 });
 
