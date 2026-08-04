@@ -1,0 +1,215 @@
+import {
+  COLUMNS,
+  LENS_INFO,
+  MEASURES,
+  type ChartType,
+  type Dim,
+  type Granularity,
+  type Grouping,
+  type Lens,
+  type Measure,
+  type ViewState,
+} from '../contract';
+import { colLabel, isDateCol } from './format';
+import {
+  IconArea,
+  IconBar,
+  IconHeatmap,
+  IconLine,
+  IconPct,
+  IconPivot,
+  IconStack,
+  IconTable,
+} from './icons';
+
+interface SidebarProps {
+  view: ViewState;
+  groupings: Grouping[];
+  onPatch: (p: Partial<ViewState>) => void;
+  onLens: (lens: Lens) => void;
+}
+
+const CHART_TYPES: { type: ChartType; label: string; icon: JSX.Element; hint: string }[] = [
+  { type: 'line', label: 'Line', icon: <IconLine />, hint: 'Trend over the x axis' },
+  { type: 'bar', label: 'Bars', icon: <IconBar />, hint: 'Grouped bars, series side by side' },
+  { type: 'stackedBar', label: 'Stacked', icon: <IconStack />, hint: 'Stacked bars, totals visible' },
+  { type: 'pctBar', label: '100%', icon: <IconPct />, hint: 'Share of each x, normalized to 100%' },
+  { type: 'area', label: 'Area', icon: <IconArea />, hint: 'Stacked area over time' },
+  { type: 'heatmap', label: 'Heatmap', icon: <IconHeatmap />, hint: 'X by series grid, color by value' },
+  { type: 'pivot', label: 'Pivot', icon: <IconPivot />, hint: 'Series rows by x columns with totals' },
+  { type: 'table', label: 'Table', icon: <IconTable />, hint: 'Aggregated rows, sortable' },
+];
+
+const GRANULARITIES: Granularity[] = ['month', 'quarter', 'year'];
+
+function dimToVal(d: Dim | null): string {
+  if (!d) return '';
+  return d.kind === 'col' ? `c:${d.col}` : `g:${d.groupingId}`;
+}
+
+function valToDim(v: string): Dim | null {
+  if (!v) return null;
+  if (v.startsWith('c:')) return { kind: 'col', col: v.slice(2) };
+  return { kind: 'grouping', groupingId: v.slice(2) };
+}
+
+export default function Sidebar({ view, groupings, onPatch, onLens }: SidebarProps) {
+  const lensInfo = LENS_INFO[view.lens];
+  const catDims = COLUMNS.filter((c) => c.groupable && c.kind === 'cat');
+  const xIsTime = view.x?.kind === 'col' && isDateCol(view.x.col);
+
+  return (
+    <aside className="sidebar">
+      <section className="side-section">
+        <h3 className="microlabel">Lens</h3>
+        <div className="seg seg-vert" role="radiogroup" aria-label="Lens">
+          {(Object.keys(LENS_INFO) as Lens[]).map((l) => (
+            <button
+              key={l}
+              className={`seg-opt${view.lens === l ? ' on' : ''}`}
+              role="radio"
+              aria-checked={view.lens === l}
+              onClick={() => onLens(l)}
+            >
+              {LENS_INFO[l].label}
+            </button>
+          ))}
+        </div>
+        <p className="side-blurb">{lensInfo.blurb}</p>
+      </section>
+
+      <section className="side-section">
+        <h3 className="microlabel">Chart</h3>
+        <div className="chart-grid" role="radiogroup" aria-label="Chart type">
+          {CHART_TYPES.map((c) => (
+            <button
+              key={c.type}
+              className={`chart-opt${view.chart === c.type ? ' on' : ''}`}
+              role="radio"
+              aria-checked={view.chart === c.type}
+              title={c.hint}
+              onClick={() => onPatch({ chart: c.type })}
+            >
+              {c.icon}
+              <span>{c.label}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="side-section">
+        <h3 className="microlabel">Encodings</h3>
+
+        <label className="field">
+          <span className="field-label">{view.chart === 'pivot' ? 'Columns (x)' : 'X axis'}</span>
+          <span className="selwrap">
+            <select
+              value={dimToVal(view.x)}
+              onChange={(e) => onPatch({ x: valToDim(e.target.value) })}
+            >
+              <option value={`c:${lensInfo.dateField}`}>
+                Time: {colLabel(lensInfo.dateField)}
+              </option>
+              <optgroup label="Columns">
+                {catDims.map((c) => (
+                  <option key={c.name} value={`c:${c.name}`}>
+                    {c.label}
+                  </option>
+                ))}
+              </optgroup>
+              {groupings.length > 0 && (
+                <optgroup label="Custom groupings">
+                  {groupings.map((g) => (
+                    <option key={g.id} value={`g:${g.id}`}>
+                      Custom: {g.name}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+          </span>
+        </label>
+
+        {xIsTime && (
+          <div className="field">
+            <span className="field-label">Granularity</span>
+            <div className="seg" role="radiogroup" aria-label="Granularity">
+              {GRANULARITIES.map((g) => (
+                <button
+                  key={g}
+                  className={`seg-opt${view.granularity === g ? ' on' : ''}`}
+                  role="radio"
+                  aria-checked={view.granularity === g}
+                  onClick={() => onPatch({ granularity: g })}
+                >
+                  {g[0].toUpperCase() + g.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <label className="field">
+          <span className="field-label">{view.chart === 'pivot' ? 'Rows (series)' : 'Series'}</span>
+          <span className="selwrap">
+            <select
+              value={dimToVal(view.series)}
+              onChange={(e) => onPatch({ series: valToDim(e.target.value) })}
+            >
+              <option value="">None</option>
+              <optgroup label="Columns">
+                {catDims.map((c) => (
+                  <option key={c.name} value={`c:${c.name}`}>
+                    {c.label}
+                  </option>
+                ))}
+              </optgroup>
+              {groupings.length > 0 && (
+                <optgroup label="Custom groupings">
+                  {groupings.map((g) => (
+                    <option key={g.id} value={`g:${g.id}`}>
+                      Custom: {g.name}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+          </span>
+        </label>
+
+        <label className="field">
+          <span className="field-label">Measure</span>
+          <span className="selwrap">
+            <select
+              value={view.measure}
+              onChange={(e) => onPatch({ measure: e.target.value as Measure })}
+            >
+              {(Object.keys(MEASURES) as Measure[]).map((m) => (
+                <option key={m} value={m}>
+                  {MEASURES[m]}
+                </option>
+              ))}
+            </select>
+          </span>
+        </label>
+
+        <label className="field field-row">
+          <span className="field-label">% of total</span>
+          <span className={`switch${view.pct ? ' on' : ''}`}>
+            <input
+              type="checkbox"
+              checked={view.pct}
+              onChange={(e) => onPatch({ pct: e.target.checked })}
+              aria-label="Show values as percent of total"
+            />
+            <i />
+          </span>
+        </label>
+        <p className="side-footnote">
+          With a series, % is each series' share within an x value. Without one, it is the share of
+          the filtered total.
+        </p>
+      </section>
+    </aside>
+  );
+}
