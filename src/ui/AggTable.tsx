@@ -73,7 +73,14 @@ export default function AggTable({ agg, view, groupings }: AggTableProps) {
   };
 
   const arrow = (k: SortKey) =>
-    sortKey === k ? <span className="sort-arrow">{sortDir === 1 ? '▴' : '▾'}</span> : null;
+    sortKey === k ? (
+      <span className="sort-arrow" aria-hidden>
+        {sortDir === 1 ? '▴' : '▾'}
+      </span>
+    ) : null;
+
+  const sortState = (k: SortKey): 'ascending' | 'descending' | undefined =>
+    sortKey === k ? (sortDir === 1 ? 'ascending' : 'descending') : undefined;
 
   const sumValues = rows.reduce((acc, r) => acc + r.value, 0);
 
@@ -82,24 +89,24 @@ export default function AggTable({ agg, view, groupings }: AggTableProps) {
       <table className="aggtable">
         <thead>
           <tr>
-            <th>
+            <th aria-sort={sortState('x')}>
               <button className="th-sort" onClick={() => clickSort('x')}>
                 {xLabel} {arrow('x')}
               </button>
             </th>
             {withSeries && (
-              <th>
+              <th aria-sort={sortState('series')}>
                 <button className="th-sort" onClick={() => clickSort('series')}>
                   {seriesLabel} {arrow('series')}
                 </button>
               </th>
             )}
-            <th className="num">
+            <th className="num" aria-sort={sortState('value')}>
               <button className="th-sort" onClick={() => clickSort('value')}>
                 {MEASURES[view.measure]} {arrow('value')}
               </button>
             </th>
-            <th className="num">
+            <th className="num" aria-sort={sortState('share')}>
               <button
                 className="th-sort"
                 onClick={() => clickSort('share')}

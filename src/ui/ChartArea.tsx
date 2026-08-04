@@ -100,7 +100,9 @@ export default function ChartArea(p: ChartAreaProps) {
         <div className="table-disclosure">
           <button className="disclosure-btn" onClick={p.onToggleTable} aria-expanded={p.showTable}>
             <IconChevron open={p.showTable} />
-            {p.showTable ? 'Hide data table' : 'Show data table'}
+            {p.showTable
+              ? 'Hide data table'
+              : `Show data table (${fmtInt(agg.rows.length)} row${agg.rows.length === 1 ? '' : 's'})`}
           </button>
           {p.showTable && <AggTable agg={agg} view={view} groupings={groupings} />}
         </div>

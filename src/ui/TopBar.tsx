@@ -35,7 +35,9 @@ export default function TopBar(p: TopBarProps) {
           <i />
         </span>
         <h1>Suffolk DA Explorer</h1>
-        <span className="topbar-status">{p.status}</span>
+        <span className="topbar-status" role="status" aria-live="polite">
+          {p.status}
+        </span>
       </div>
       <div className="topbar-actions">
         <button

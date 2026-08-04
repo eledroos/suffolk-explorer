@@ -1,9 +1,19 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { distinctValues } from '../engine';
 import { COLUMNS, LENS_INFO, type Dataset, type Grouping, type ViewState } from '../contract';
 import { colLabel, displayValue, truncate } from './format';
 import { IconClose } from './icons';
 import MultiSelect from './MultiSelect';
+
+/** Filter sections, chunked so substantive dimensions outrank provenance.
+    Any filterable column not named here lands in the last group. */
+const FILTER_GROUPS: { label: string; cols: string[] }[] = [
+  { label: 'Case', cols: ['crime_type', 'court', 'case_status', 'agency'] },
+  { label: 'Outcome', cols: ['disposition_description', 'disposition_reason', 'outcome_class', 'prosecutorial_call'] },
+  { label: 'People', cols: ['race', 'sex'] },
+  { label: 'DA administration', cols: ['filed_under', 'disposed_under'] },
+  { label: 'Source files', cols: ['filing_source', 'disposition_source'] },
+];
 
 interface FilterPanelProps {
   ds: Dataset;
@@ -28,6 +38,28 @@ export default function FilterPanel({
 }: FilterPanelProps) {
   const filterCols = COLUMNS.filter((c) => c.filterable && c.kind === 'cat');
   const dateLabel = colLabel(LENS_INFO[view.lens].dateField);
+
+  // Columns grouped for scanability; anything unlisted falls into a trailing group.
+  const named = new Set(FILTER_GROUPS.flatMap((g) => g.cols));
+  const byName = new Map(filterCols.map((c) => [c.name, c]));
+  const grouped = FILTER_GROUPS.map((g) => ({
+    label: g.label,
+    cols: g.cols.flatMap((n) => (byName.has(n) ? [byName.get(n)!] : [])),
+  })).filter((g) => g.cols.length > 0);
+  const rest = filterCols.filter((c) => !named.has(c.name));
+  if (rest.length > 0) grouped.push({ label: 'Other', cols: rest });
+
+  // The panel becomes an overlay drawer under 1100px; there, Esc closes it
+  // (unless a modal dialog above is handling Esc itself).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (document.querySelector('dialog[open]')) return;
+      if (window.matchMedia('(max-width: 1100px)').matches) onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
   // Cache distinct values per column for the life of the dataset.
   const cacheRef = useRef(new Map<string, string[]>());
@@ -64,7 +96,9 @@ export default function FilterPanel({
   const anyActive = chips.length > 0 || view.dateFrom !== null || view.dateTo !== null;
 
   return (
-    <aside className="fpanel" aria-label="Filters">
+    <>
+      <div className="fpanel-scrim" onClick={onClose} aria-hidden />
+      <aside className="fpanel" aria-label="Filters">
       <div className="fpanel-head">
         <h3 className="microlabel">Filters</h3>
         {anyActive && (
@@ -129,21 +163,24 @@ export default function FilterPanel({
           </section>
         )}
 
-        <section className="fp-section">
-          {filterCols.map((c) => (
-            <MultiSelect
-              key={c.name}
-              label={c.label}
-              getValues={getColValues(c.name)}
-              selected={view.filters[c.name] ?? []}
-              onChange={(vals) => onSetFilter(c.name, vals)}
-            />
-          ))}
-        </section>
+        {grouped.map((g) => (
+          <section key={g.label} className="fp-section">
+            <h4 className="microlabel fp-group-label">{g.label}</h4>
+            {g.cols.map((c) => (
+              <MultiSelect
+                key={c.name}
+                label={c.label}
+                getValues={getColValues(c.name)}
+                selected={view.filters[c.name] ?? []}
+                onChange={(vals) => onSetFilter(c.name, vals)}
+              />
+            ))}
+          </section>
+        ))}
 
         {groupings.length > 0 && (
           <section className="fp-section">
-            <h4 className="field-label">Custom groupings</h4>
+            <h4 className="microlabel fp-group-label">Custom groupings</h4>
             {groupings.map((g) => (
               <MultiSelect
                 key={g.id}
@@ -156,6 +193,7 @@ export default function FilterPanel({
           </section>
         )}
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

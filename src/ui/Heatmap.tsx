@@ -64,21 +64,25 @@ export default function Heatmap({ agg, palette, mode, pct }: HeatmapProps) {
       <div
         className="heatmap"
         style={{
-          gridTemplateColumns: `minmax(88px, max-content) repeat(${cols.length}, minmax(${showCellText ? 44 : 14}px, 1fr))`,
+          gridTemplateColumns: `minmax(140px, max-content) repeat(${cols.length}, minmax(${showCellText ? 44 : 14}px, 1fr))`,
         }}
         role="table"
         aria-label="Heatmap"
       >
-        <div className="hm-corner" />
-        {cols.map((x, i) => (
-          <div
-            key={x}
-            className={labelEvery > 1 ? 'hm-collabel hm-collabel-sparse' : 'hm-collabel'}
-            title={displayValue(x)}
-          >
-            {i % labelEvery === 0 ? <span>{truncate(displayValue(x), 10)}</span> : null}
-          </div>
-        ))}
+        <div role="row" style={{ display: 'contents' }}>
+          <div className="hm-corner" role="columnheader" />
+          {cols.map((x, i) => (
+            <div
+              key={x}
+              className={labelEvery > 1 ? 'hm-collabel hm-collabel-sparse' : 'hm-collabel'}
+              role="columnheader"
+              aria-label={displayValue(x)}
+              title={displayValue(x)}
+            >
+              {i % labelEvery === 0 ? <span>{truncate(displayValue(x), 10)}</span> : null}
+            </div>
+          ))}
+        </div>
         {rows.map((s) => (
           <HeatRow
             key={s}
@@ -124,20 +128,30 @@ function HeatRow({
   fmt: (v: number) => string;
 }) {
   return (
-    <>
-      <div className="hm-rowlabel" title={displayValue(series)}>
-        {truncate(displayValue(series), 18)}
+    <div role="row" style={{ display: 'contents' }}>
+      <div className="hm-rowlabel" role="rowheader" title={displayValue(series)}>
+        {truncate(displayValue(series), 24)}
       </div>
       {cols.map((x) => {
         const v = cellValue(x, series);
         if (v === null) {
-          return <div key={x} className="hm-cell hm-cell-empty" title={`${displayValue(series)} / ${displayValue(x)}: no data`} />;
+          return (
+            <div
+              key={x}
+              className="hm-cell hm-cell-empty"
+              role="cell"
+              aria-label="No data"
+              title={`${displayValue(series)} / ${displayValue(x)}: no data`}
+            />
+          );
         }
         const step = max > 0 ? Math.min(palette.seq.length - 1, Math.floor((v / max) * palette.seq.length)) : 0;
         return (
           <div
             key={x}
             className="hm-cell"
+            role="cell"
+            aria-label={fmt(v)}
             style={{ background: palette.seq[step], color: textFor(step) }}
             title={`${displayValue(series)} / ${displayValue(x)}: ${fmt(v)}`}
           >
@@ -145,6 +159,6 @@ function HeatRow({
           </div>
         );
       })}
-    </>
+    </div>
   );
 }

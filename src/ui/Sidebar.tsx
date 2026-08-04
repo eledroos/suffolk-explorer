@@ -1,3 +1,4 @@
+import type { KeyboardEvent } from 'react';
 import {
   COLUMNS,
   LENS_INFO,
@@ -53,6 +54,32 @@ function valToDim(v: string): Dim | null {
   return { kind: 'grouping', groupingId: v.slice(2) };
 }
 
+/**
+ * Standard radio-group keyboard behavior for the button groups below:
+ * arrows move and select (wrapping), Home/End jump. Buttons carry roving
+ * tabindex so the whole group is one tab stop.
+ */
+function radioGroupKeys(
+  e: KeyboardEvent<HTMLElement>,
+  current: number,
+  count: number,
+  select: (i: number) => void,
+) {
+  let next = -1;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (current + 1) % count;
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (current - 1 + count) % count;
+  else if (e.key === 'Home') next = 0;
+  else if (e.key === 'End') next = count - 1;
+  if (next < 0 || next === current) {
+    if (next === current) e.preventDefault();
+    return;
+  }
+  e.preventDefault();
+  select(next);
+  const radios = e.currentTarget.querySelectorAll<HTMLElement>('[role="radio"]');
+  radios[next]?.focus();
+}
+
 export default function Sidebar({ view, groupings, onPatch, onLens }: SidebarProps) {
   const lensInfo = LENS_INFO[view.lens];
   const catDims = COLUMNS.filter((c) => c.groupable && c.kind === 'cat');
@@ -62,13 +89,22 @@ export default function Sidebar({ view, groupings, onPatch, onLens }: SidebarPro
     <aside className="sidebar">
       <section className="side-section">
         <h3 className="microlabel">Lens</h3>
-        <div className="seg seg-vert" role="radiogroup" aria-label="Lens">
+        <div
+          className="seg seg-vert"
+          role="radiogroup"
+          aria-label="Lens"
+          onKeyDown={(e) => {
+            const lenses = Object.keys(LENS_INFO) as Lens[];
+            radioGroupKeys(e, lenses.indexOf(view.lens), lenses.length, (i) => onLens(lenses[i]));
+          }}
+        >
           {(Object.keys(LENS_INFO) as Lens[]).map((l) => (
             <button
               key={l}
               className={`seg-opt${view.lens === l ? ' on' : ''}`}
               role="radio"
               aria-checked={view.lens === l}
+              tabIndex={view.lens === l ? 0 : -1}
               onClick={() => onLens(l)}
             >
               {LENS_INFO[l].label}
@@ -80,13 +116,24 @@ export default function Sidebar({ view, groupings, onPatch, onLens }: SidebarPro
 
       <section className="side-section">
         <h3 className="microlabel">Chart</h3>
-        <div className="chart-grid" role="radiogroup" aria-label="Chart type">
+        <div
+          className="chart-grid"
+          role="radiogroup"
+          aria-label="Chart type"
+          onKeyDown={(e) => {
+            const current = CHART_TYPES.findIndex((c) => c.type === view.chart);
+            radioGroupKeys(e, current, CHART_TYPES.length, (i) =>
+              onPatch({ chart: CHART_TYPES[i].type }),
+            );
+          }}
+        >
           {CHART_TYPES.map((c) => (
             <button
               key={c.type}
               className={`chart-opt${view.chart === c.type ? ' on' : ''}`}
               role="radio"
               aria-checked={view.chart === c.type}
+              tabIndex={view.chart === c.type ? 0 : -1}
               title={c.hint}
               onClick={() => onPatch({ chart: c.type })}
             >
@@ -133,13 +180,26 @@ export default function Sidebar({ view, groupings, onPatch, onLens }: SidebarPro
         {xIsTime && (
           <div className="field">
             <span className="field-label">Granularity</span>
-            <div className="seg" role="radiogroup" aria-label="Granularity">
+            <div
+              className="seg"
+              role="radiogroup"
+              aria-label="Granularity"
+              onKeyDown={(e) => {
+                radioGroupKeys(
+                  e,
+                  GRANULARITIES.indexOf(view.granularity),
+                  GRANULARITIES.length,
+                  (i) => onPatch({ granularity: GRANULARITIES[i] }),
+                );
+              }}
+            >
               {GRANULARITIES.map((g) => (
                 <button
                   key={g}
                   className={`seg-opt${view.granularity === g ? ' on' : ''}`}
                   role="radio"
                   aria-checked={view.granularity === g}
+                  tabIndex={view.granularity === g ? 0 : -1}
                   onClick={() => onPatch({ granularity: g })}
                 >
                   {g[0].toUpperCase() + g.slice(1)}

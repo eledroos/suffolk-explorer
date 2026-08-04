@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { distinctValues } from '../engine';
 import { COLUMNS, type Bucket, type Dataset, type Grouping } from '../contract';
 import { colLabel, displayValue, truncate } from './format';
@@ -40,6 +40,24 @@ export default function CategoryBuilder({
   const fileRef = useRef<HTMLInputElement>(null);
   const [importError, setImportError] = useState<string | null>(null);
 
+  // The editor reports its live draft here so Esc / backdrop / X can tell
+  // whether leaving would throw away work.
+  const liveDraftRef = useRef<Grouping | null>(null);
+
+  /** Esc, backdrop click, or the X. In the editor this steps back to the
+      list (confirming first if the draft is dirty); a second Esc closes. */
+  const requestClose = () => {
+    if (mode.kind === 'edit') {
+      const live = liveDraftRef.current;
+      const dirty = live !== null && JSON.stringify(live) !== JSON.stringify(mode.draft);
+      if (dirty && !window.confirm('Discard unsaved changes to this grouping?')) return;
+      liveDraftRef.current = null;
+      setMode({ kind: 'list' });
+      return;
+    }
+    onClose();
+  };
+
   const startNew = () => {
     const firstCol = COLUMNS.find((c) => c.groupable && c.kind === 'cat')?.name ?? 'crime_type';
     setMode({
@@ -65,6 +83,7 @@ export default function CategoryBuilder({
       ? [...userGroupings, draft]
       : userGroupings.map((x) => (x.id === draft.id ? draft : x));
     onSaveAll(next);
+    liveDraftRef.current = null;
     setMode({ kind: 'list' });
   };
 
@@ -120,7 +139,7 @@ export default function CategoryBuilder({
   return (
     <Modal
       title={mode.kind === 'list' ? 'Custom categories' : mode.isNew ? 'New grouping' : 'Edit grouping'}
-      onClose={onClose}
+      onClose={requestClose}
       wide
     >
       {mode.kind === 'list' ? (
@@ -209,7 +228,10 @@ export default function CategoryBuilder({
           ds={ds}
           draft={mode.draft}
           isNew={mode.isNew}
-          onCancel={() => setMode({ kind: 'list' })}
+          onDraftChange={(g) => {
+            liveDraftRef.current = g;
+          }}
+          onCancel={requestClose}
           onSave={save}
         />
       )}
@@ -230,16 +252,21 @@ function GroupingEditor({
   ds,
   draft: initial,
   isNew,
+  onDraftChange,
   onCancel,
   onSave,
 }: {
   ds: Dataset;
   draft: Grouping;
   isNew: boolean;
+  onDraftChange: (g: Grouping) => void;
   onCancel: () => void;
   onSave: (g: Grouping, isNew: boolean) => void;
 }) {
   const [draft, setDraft] = useState<Grouping>(initial);
+  useEffect(() => {
+    onDraftChange(draft);
+  }, [draft, onDraftChange]);
   const [activeBucket, setActiveBucket] = useState<number>(draft.buckets.length > 0 ? 0 : -1);
   const [query, setQuery] = useState('');
   const [error, setError] = useState<string | null>(null);

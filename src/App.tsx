@@ -25,7 +25,7 @@ import AboutModal from './ui/AboutModal';
 import CategoryBuilder from './ui/CategoryBuilder';
 import ChartArea from './ui/ChartArea';
 import FilterPanel from './ui/FilterPanel';
-import { fmtInt, isDateCol } from './ui/format';
+import { colLabel, fmtInt, isDateCol, viewTitle } from './ui/format';
 import Notices from './ui/Notices';
 import Sidebar from './ui/Sidebar';
 import TopBar from './ui/TopBar';
@@ -245,21 +245,49 @@ export default function App() {
   const downloadCsv = useCallback(() => {
     if (!agg) return;
     try {
-      const csv = aggToCsv(agg, view);
+      // The caveats travel with the data: view, filters, and any active
+      // data-quality notices ride along as # comment lines.
+      const stamp = new Date().toISOString().slice(0, 10);
+      const header: string[] = [
+        `# Suffolk DA Explorer export, generated ${stamp}`,
+        `# View: ${viewTitle(view, effectiveGroupings)} (${LENS_INFO[view.lens].label} lens)`,
+      ];
+      const filterParts: string[] = [];
+      for (const [key, vals] of Object.entries(view.filters)) {
+        if (!vals || vals.length === 0) continue;
+        const name = key.startsWith('g:')
+          ? effectiveGroupings.find((g) => g.id === key.slice(2))?.name ?? 'Custom grouping'
+          : colLabel(key);
+        filterParts.push(`${name} = ${vals.join(' | ')}`);
+      }
+      if (view.dateFrom || view.dateTo) {
+        filterParts.push(
+          `${colLabel(LENS_INFO[view.lens].dateField)} ${view.dateFrom ?? 'start'} to ${view.dateTo ?? 'end'}`,
+        );
+      }
+      header.push(`# Filters: ${filterParts.length > 0 ? filterParts.join('; ') : 'none'}`);
+      for (const n of notices) {
+        header.push(`# ${n.level === 'warn' ? 'Caution' : 'Note'}: ${n.title}. ${n.detail}`);
+      }
+      const csv = `${header.join('\n')}\n${aggToCsv(agg, view)}`;
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `suffolk-${view.lens}-${view.measure}.csv`;
+      a.download = `suffolk-${view.lens}-${view.measure}-${stamp}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch {
-      /* engine not ready or serialization failed; button does nothing */
+    } catch (e) {
+      window.alert(
+        `The CSV export failed: ${e instanceof Error ? e.message : String(e)}. Try again, or reload the page.`,
+      );
     }
-  }, [agg, view]);
+  }, [agg, view, effectiveGroupings, notices]);
 
+  // Badge counts individual filter values (matching the chips), plus the
+  // date range as one.
   const filterCount =
-    Object.values(view.filters).filter((v) => v && v.length > 0).length +
+    Object.values(view.filters).reduce((acc, v) => acc + (v ? v.length : 0), 0) +
     (view.dateFrom || view.dateTo ? 1 : 0);
 
   const status =
