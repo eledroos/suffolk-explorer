@@ -46,7 +46,28 @@ To serve the data from Cloudflare R2 instead of the repo:
 ## Deploy to Cloudflare Pages
 
 - Framework preset: Vite. Build command: `npm run build`. Output dir: `dist`.
-- No functions, no bindings needed. The app is fully static.
+- The app itself is fully static; the only server-side piece is the optional
+  password gate below.
+
+### Password protection (optional)
+
+`functions/_middleware.ts` gates every request — the app, its assets, and the
+parquet — behind a password when the env var **`APP_PASSWORD`** is set in the
+Pages project (Settings → Environment variables; set it for Production and
+Preview). Successful login stores a 30-day HttpOnly cookie holding a SHA-256
+token; the password itself never reaches the client or the bundle.
+
+- No `APP_PASSWORD` set → the site is open. Local `npm run dev` never runs
+  the gate (Vite doesn't execute Pages Functions).
+- To test the gate locally:
+  `npm run build && npx wrangler pages dev dist --binding APP_PASSWORD=yourpassword`
+  (a plain shell env var is not a Worker binding and will not arm the gate).
+- Changing the password invalidates existing cookies automatically, since the
+  cookie token is derived from it.
+- Caveat: if you move the parquet to a public R2 bucket via `VITE_DATA_URL`,
+  the data file itself is no longer behind the gate — keep it in the repo (or
+  a private bucket proxied through the same Pages project) if the gate should
+  cover the data.
 
 ## Provenance, in one paragraph
 
