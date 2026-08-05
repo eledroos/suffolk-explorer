@@ -18,6 +18,7 @@ const SEGMENTS = [
   { window: 'Filings, 2025', source: 'PRR #260211A', badge: '1 source', tone: 'mid' },
   { window: 'Dispositions, Jan 2022 – Sep 2024', source: 'Oct 2024 PRR', badge: 'bounds-checked', tone: 'good' },
   { window: 'Dispositions, Oct 2024 – Dec 2025', source: 'July 2026 file', badge: '98.35% agree', tone: 'good' },
+  { window: 'Optional: filings 2006–2021, dispositions 2000–2021', source: 'Pre-2022 composite', badge: 'same IDs', tone: 'good' },
 ] as const;
 
 const LIMITS = [
@@ -50,6 +51,11 @@ const LIMITS = [
     level: 'info' as const,
     title: 'Field gaps',
     body: 'Race ~17% missing; judge absent; no usable sentencing. Charlestown filings are zero in Jan 2022 and Jan 2023 upstream in DAMION.',
+  },
+  {
+    level: 'info' as const,
+    title: 'Pre-2022 composite: 2021 is single-source',
+    body: 'The optional pre-2022 layer carries the same case and person IDs as 2022–2025, so distinct counts work across the seam. 2021 dispositions come from one Jan 2022 snapshot and are floors.',
   },
 ];
 

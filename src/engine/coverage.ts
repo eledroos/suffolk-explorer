@@ -127,16 +127,9 @@ export const COVERAGE: CoverageEntry[] = [
     banner: true,
     when: (view) => view.history === true,
   },
-  {
-    id: 'distinct-across-seam',
-    lenses: ['filings', 'dispositions', 'all'],
-    short: 'Distinct counts cannot cross the 2021/2022 seam',
-    detail:
-      'The 2006-2020 extract is anonymized, so the same person or case active in both eras counts twice. Treat cross-era distinct cases and people as upper bounds.',
-    level: 'info',
-    banner: true,
-    when: (view) => view.history === true && view.measure !== 'charges',
-  },
+  // 'distinct-across-seam' retired 2026-08-05: the pre-2022 composite now
+  // carries real DAMION IDs (same ID space as the PRR files, verified), so
+  // distinct cases and people dedupe correctly across the 2021/2022 seam.
   {
     id: 'right-censor',
     lenses: ['filings'],

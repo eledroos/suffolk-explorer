@@ -139,9 +139,9 @@ export default function Sidebar({
         <p className="side-footnote" aria-live="polite">
           {view.history
             ? historyLoading || !historyReady
-              ? 'Loading the 2006-2021 history (17 MB) ...'
-              : 'History loaded: filings 2006-2020 from the internal dashboard extract (dispositions back to 2000), 2021 from the Jan 2022 DAMION extract. 2021 dispositions are single-source.'
-            : 'Adds 1.09M charges, filings 2006-2021 and dispositions 2000-2021 (17 MB download). Sources differ from 2022-2025; caveats appear on the charts.'}
+              ? 'Loading the pre-2022 composite (16 MB) ...'
+              : 'Pre-2022 composite loaded: filings 2006-2021, dispositions 2000-2021, same case and person IDs as 2022-2025. 2021 dispositions are single-source.'
+            : 'Adds the pre-2022 composite: 1.09M charges, filings 2006-2021 and dispositions 2000-2021 (16 MB download). Caveats appear on the charts.'}
         </p>
       </section>
 

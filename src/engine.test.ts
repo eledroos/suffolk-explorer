@@ -614,9 +614,9 @@ describe('history dataset (2006-2021) merge', () => {
       new URL('../public/data/history.parquet', import.meta.url).pathname,
     );
     const hist = await loadDataset(histPath);
-    expect(hist.rowCount).toBe(1_092_860);
+    expect(hist.rowCount).toBe(1_092_889);
     const merged = mergeDatasets(ds, hist);
-    expect(merged.rowCount).toBe(200_630 + 1_092_860);
+    expect(merged.rowCount).toBe(200_630 + 1_092_889);
     const v: ViewState = {
       ...DEFAULT_VIEW,
       history: true,
@@ -625,10 +625,12 @@ describe('history dataset (2006-2021) merge', () => {
     };
     const agg = aggregate(merged, v, []);
     const val = (x: string) => agg.rows.find((r) => r.x === x)?.value ?? 0;
-    // internal-extract years (verified against the Aug 3 audit's adult table)
+    // raw-extract years (verified against the Aug 3 audit's adult table;
+    // the Oct 2021 pull differs from the May 2021 dashboard extract by a
+    // handful of rows from sealing between pulls)
     expect(val('2016')).toBe(51_173);
-    expect(val('2019')).toBe(46_013);
-    expect(val('2020')).toBe(31_345);
+    expect(val('2019')).toBe(46_014);
+    expect(val('2020')).toBe(31_339);
     // dump year, corroborated by PRR-220211C to 0.3%
     expect(val('2021')).toBe(37_283);
     // Hayden era continues seamlessly
@@ -636,9 +638,23 @@ describe('history dataset (2006-2021) merge', () => {
     expect(val('2025')).toBe(40_595);
     const d = aggregate(merged, { ...v, lens: 'dispositions', x: { kind: 'col', col: 'disposition_date' } }, []);
     const dval = (x: string) => d.rows.find((r) => r.x === x)?.value ?? 0;
-    expect(dval('2020')).toBe(20_470);
+    expect(dval('2020')).toBe(20_667); // Oct 2021 pull caught +197 late entries over the May pull
     expect(dval('2021')).toBe(28_209);
     expect(dval('2022')).toBe(37_091);
+
+    // Real IDs across the seam: distinct people dedupe between the composite
+    // and the Hayden file (ground truth from duckdb over both CSVs; 2,375
+    // people have filings in both 2021 and 2022).
+    const people = (from: string, to: string) =>
+      aggregate(
+        merged,
+        { ...v, measure: 'people' as const, dateFrom: from, dateTo: to },
+        [],
+      ).total; // distinct across the whole filtered view, not per-bucket
+    expect(people('2021-01-01', '2021-12-31')).toBe(13_577);
+    expect(people('2022-01-01', '2022-12-31')).toBe(14_156);
+    // NOT 13,577 + 14,156 = 27,733: the overlap collapses
+    expect(people('2021-01-01', '2022-12-31')).toBe(25_358);
   }, 120_000);
 
   it('history flag rides the URL; 2021 snapshot band gates on it', () => {
@@ -649,12 +665,13 @@ describe('history dataset (2006-2021) merge', () => {
     expect(bandsFor(view({ lens: 'dispositions' }), []).map((b) => b.id)).not.toContain('disp-2021-snapshot');
     // the window-open note yields to history
     expect(noticesFor(histView, []).some((n) => n.title.includes('Window opens'))).toBe(false);
-    // Both-lens row inflation and cross-seam distinct caveats gate on history
+    // Both-lens row inflation caveat gates on history
     const both = view({ lens: 'all', history: true });
     expect(noticesFor(both, []).some((n) => n.title.includes('counts rows'))).toBe(true);
     expect(noticesFor(view({ lens: 'all' }), []).some((n) => n.title.includes('counts rows'))).toBe(false);
+    // distinct-across-seam retired 2026-08-05: real IDs dedupe across the
+    // seam (asserted numerically in the merge test), so no view warns of it
     const cases = view({ lens: 'filings', history: true, measure: 'cases' });
-    expect(noticesFor(cases, []).some((n) => n.title.includes('seam'))).toBe(true);
-    expect(noticesFor(view({ lens: 'filings', history: true }), []).some((n) => n.title.includes('seam'))).toBe(false);
+    expect(noticesFor(cases, []).some((n) => n.title.includes('seam'))).toBe(false);
   });
 });

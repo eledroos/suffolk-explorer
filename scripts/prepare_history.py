@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""Convert history-charges-2006-2021.csv to public/data/history.parquet.
-Same typing rules as prepare_data.py."""
+"""Convert pre-2022-composite.csv to public/data/history.parquet.
+Same typing rules as prepare_data.py. The composite carries real DAMION
+case/person IDs (no anonymization offset), so distinct counts dedupe
+across the 2021/2022 seam."""
 import os, sys
 import pandas as pd
 import pyarrow as pa
@@ -8,7 +10,7 @@ import pyarrow.parquet as pq
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CSV = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
-    HERE, "..", "..", "assembled", "history-charges-2006-2021.csv")
+    HERE, "..", "..", "assembled", "pre-2022-composite.csv")
 OUT = os.path.join(HERE, "..", "public", "data", "history.parquet")
 
 DATES = ["filing_date", "offense_date", "disposition_date"]

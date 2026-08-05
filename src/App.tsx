@@ -400,7 +400,7 @@ export default function App() {
             <i />
           </span>
           <h2>Loading the dataset</h2>
-          <p>Fetching and decoding hayden.parquet, 200,630 charge rows. Runs entirely in your browser.</p>
+          <p>Getting the charge data ready.</p>
         </div>
       )}
 
