@@ -25,6 +25,7 @@ import {
 
 interface SidebarProps {
   view: ViewState;
+  lensCounts: Record<Lens, number>;
   groupings: Grouping[];
   onPatch: (p: Partial<ViewState>) => void;
   onLens: (lens: Lens) => void;
@@ -80,7 +81,8 @@ function radioGroupKeys(
   radios[next]?.focus();
 }
 
-export default function Sidebar({ view, groupings, onPatch, onLens }: SidebarProps) {
+export default function Sidebar({
+  lensCounts, view, groupings, onPatch, onLens }: SidebarProps) {
   const lensInfo = LENS_INFO[view.lens];
   const catDims = COLUMNS.filter((c) => c.groupable && c.kind === 'cat');
   const xIsTime = view.x?.kind === 'col' && isDateCol(view.x.col);
@@ -108,6 +110,7 @@ export default function Sidebar({ view, groupings, onPatch, onLens }: SidebarPro
               onClick={() => onLens(l)}
             >
               {LENS_INFO[l].label}
+              <span className="seg-count">{lensCounts[l].toLocaleString('en-US')}</span>
             </button>
           ))}
         </div>

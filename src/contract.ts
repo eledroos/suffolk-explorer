@@ -53,8 +53,8 @@ export const LENS_INFO: Record<Lens, { label: string; dateField: string; windowF
                   blurb: 'Charges entering the system, Jan 2022 - Dec 2025. Time axis = filing date.' },
   dispositions: { label: 'Dispositions', dateField: 'disposition_date', windowFlag: 'disposed_in_window',
                   blurb: 'Charges resolved, Jan 2022 - Dec 2025, including cases filed earlier. Time axis = disposition date.' },
-  all:          { label: 'All charges',  dateField: 'filing_date',      windowFlag: null,
-                  blurb: 'Every row in the dataset, no window filter. Mixing cohorts is on you.' },
+  all:          { label: 'Both',         dateField: 'filing_date',      windowFlag: null,
+                  blurb: 'Filed in the window, resolved in it, or both: every charge row. The filing-date axis reaches back to 2004 for backlog charges.' },
 };
 
 // ---------- measures ----------

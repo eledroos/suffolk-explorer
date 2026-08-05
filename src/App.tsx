@@ -290,6 +290,15 @@ export default function App() {
     Object.values(view.filters).reduce((acc, v) => acc + (v ? v.length : 0), 0) +
     (view.dateFrom || view.dateTo ? 1 : 0);
 
+  const lensCounts = useMemo<Record<Lens, number>>(() => {
+    if (load.status !== 'ready') return { filings: 0, dispositions: 0, all: 0 };
+    const ds = load.ds;
+    let filed = 0, disp = 0;
+    const f = ds.bools.filed_in_window, d = ds.bools.disposed_in_window;
+    for (let i = 0; i < ds.rowCount; i++) { if (f[i]) filed++; if (d[i]) disp++; }
+    return { filings: filed, dispositions: disp, all: ds.rowCount };
+  }, [load]);
+
   const status =
     load.status === 'loading'
       ? 'Loading…'
@@ -349,7 +358,7 @@ export default function App() {
 
       {load.status === 'ready' && (
         <div className="app-body">
-          <Sidebar view={view} groupings={effectiveGroupings} onPatch={patch} onLens={onLens} />
+          <Sidebar view={view} lensCounts={lensCounts} groupings={effectiveGroupings} onPatch={patch} onLens={onLens} />
           <main className="main">
             <Notices notices={notices} dismissed={dismissed} onDismiss={dismissNotice} />
             <ChartArea
