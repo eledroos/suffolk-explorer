@@ -9,7 +9,7 @@ import MultiSelect from './MultiSelect';
     Any filterable column not named here lands in the last group. */
 const FILTER_GROUPS: { label: string; cols: string[] }[] = [
   { label: 'Case', cols: ['crime_type', 'court', 'case_status', 'case_disposition_status', 'agency', 'charge_description', 'dtp_class'] },
-  { label: 'Outcome', cols: ['disposition_description', 'disposition_reason', 'outcome_detail', 'outcome_class', 'prosecutorial_call'] },
+  { label: 'Outcome', cols: ['disposition_description', 'disposition_reason', 'outcome_class', 'prosecutorial_call'] },
   { label: 'People', cols: ['race', 'sex'] },
   { label: 'DA administration', cols: ['filed_under', 'disposed_under'] },
   { label: 'Source files', cols: ['filing_source', 'disposition_source'] },
