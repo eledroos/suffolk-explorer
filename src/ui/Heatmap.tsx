@@ -9,13 +9,15 @@ interface HeatmapProps {
   palette: Palette;
   mode: Mode;
   pct: boolean;
+  /** x label -> severity, for time columns inside a known coverage band. */
+  bandMarks?: Map<string, 'gap' | 'floor' | 'haze'>;
 }
 
 /**
  * HTML/CSS heatmap: x dimension across columns, series dimension down rows,
  * cell fill stepped through PALETTE.seq. No recharts involved.
  */
-export default function Heatmap({ agg, palette, mode, pct }: HeatmapProps) {
+export default function Heatmap({ agg, palette, mode, pct, bandMarks }: HeatmapProps) {
   const cols = agg.xOrder;
   const rows = agg.seriesOrder;
   const grid = useMemo(() => valueGrid(agg), [agg]);
@@ -80,6 +82,9 @@ export default function Heatmap({ agg, palette, mode, pct }: HeatmapProps) {
               title={displayValue(x)}
             >
               {i % labelEvery === 0 ? <span>{truncate(displayValue(x), 10)}</span> : null}
+              {bandMarks?.has(x) && (
+                <i className={`hm-band-dot sev-${bandMarks.get(x)}`} aria-hidden />
+              )}
             </div>
           ))}
         </div>

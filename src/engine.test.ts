@@ -22,6 +22,8 @@ import {
   saveGroupings,
   PRESET_GROUPINGS,
   aggToCsv,
+  bandsFor,
+  bandBuckets,
 } from './engine';
 
 // file URL -> filesystem path without needing @types/node (repo path has spaces)
@@ -561,5 +563,46 @@ describe('pctDenom lens: percent-of-period baselines (adversarial ground truth f
     const decoded = decodeView(legacy);
     expect(decoded?.pct).toBe(true);
     expect(decoded?.pctDenom).toBe('view');
+  });
+});
+
+describe('coverage bands (registry)', () => {
+  it('bands and banners derive from one registry: superior gap active/inactive together', () => {
+    const on = view({ lens: 'dispositions' });
+    expect(bandsFor(on, []).map((b) => b.id)).toContain('superior-gap');
+    expect(noticesFor(on, []).some((n) => n.title.includes('Superior'))).toBe(true);
+    const capped = view({ lens: 'dispositions', dateTo: '2024-09-30' });
+    expect(bandsFor(capped, []).map((b) => b.id)).not.toContain('superior-gap');
+    expect(noticesFor(capped, []).some((n) => n.title.includes('Superior'))).toBe(false);
+    const chelsea = view({ lens: 'dispositions', filters: { court: ['Chelsea Court'] } });
+    expect(bandsFor(chelsea, []).map((b) => b.id)).not.toContain('superior-gap');
+  });
+
+  it('sealing haze on filings only; late-entry floor is band-only (no banner)', () => {
+    const f = view({ lens: 'filings' });
+    expect(bandsFor(f, []).map((b) => b.id)).toContain('sealing-2025');
+    const d = view({ lens: 'dispositions' });
+    const ids = bandsFor(d, []).map((b) => b.id);
+    expect(ids).toContain('late-entry-floor');
+    expect(noticesFor(d, []).some((n) => n.title.includes('floors'))).toBe(false);
+  });
+
+
+  it('regression: the superior banner range is capped at Dec 2025 (deliberate change from open-ended)', () => {
+    const future = view({ lens: 'dispositions', dateFrom: '2026-01-01' });
+    expect(noticesFor(future, []).some((n) => n.title.includes('Superior'))).toBe(false);
+    expect(bandsFor(future, []).map((b) => b.id)).not.toContain('superior-gap');
+  });
+
+  it('bandBuckets snaps and flags partial edges', () => {
+    const sup = { from: '2024-10', to: '2025-12' };
+    expect(bandBuckets(sup, 'month')).toEqual({ start: '2024-10', end: '2025-12', startPartial: false, endPartial: false });
+    expect(bandBuckets(sup, 'quarter')).toEqual({ start: '2024-Q4', end: '2025-Q4', startPartial: false, endPartial: false });
+    expect(bandBuckets(sup, 'year')).toEqual({ start: '2024', end: '2025', startPartial: true, endPartial: false });
+    const floor = { from: '2024-07', to: '2024-09' };
+    expect(bandBuckets(floor, 'quarter')).toEqual({ start: '2024-Q3', end: '2024-Q3', startPartial: false, endPartial: false });
+    expect(bandBuckets(floor, 'year')).toEqual({ start: '2024', end: '2024', startPartial: true, endPartial: true });
+    const odd = { from: '2024-08', to: '2025-02' };
+    expect(bandBuckets(odd, 'quarter')).toEqual({ start: '2024-Q3', end: '2025-Q1', startPartial: true, endPartial: true });
   });
 });

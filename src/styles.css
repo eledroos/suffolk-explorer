@@ -1770,3 +1770,41 @@ input[type='date']:hover {
   color: var(--ink3);
   text-align: center;
 }
+
+/* coverage bands: chips + heatmap dots */
+.band-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  justify-content: center;
+  margin-top: 8px;
+}
+.band-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.band-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ink2);
+  border: 1px solid var(--grid);
+  border-radius: 99px;
+  padding: 2px 9px;
+  cursor: default;
+}
+.band-chip i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+.band-chip.sev-gap i {
+  background: repeating-linear-gradient(45deg, var(--crit-t, rgba(208,59,59,.25)) 0 2px, transparent 2px 4px);
+  border: 1px solid var(--crit);
+}
+.band-chip.sev-floor i { background: var(--warn-t, rgba(250,178,25,.3)); border: 1px solid var(--warn); }
+.band-chip.sev-haze i { background: var(--warn-t, rgba(250,178,25,.18)); border: 1px dashed var(--warn); }
+.hm-band-dot {
+  display: block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  margin: 1px auto 0;
+}
+.hm-band-dot.sev-gap { background: var(--crit); }
+.hm-band-dot.sev-floor { background: var(--warn); }
+.hm-band-dot.sev-haze { background: transparent; box-shadow: inset 0 0 0 1.5px var(--warn); }

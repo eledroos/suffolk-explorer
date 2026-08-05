@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  Customized,
   Area,
   AreaChart,
   Bar,
@@ -21,12 +22,13 @@ import {
   type ViewState,
 } from '../contract';
 import AggTable from './AggTable';
-import { displayValue, fmtAxis, fmtInt, fmtPct, MONO, seriesColors, truncate, viewTitle } from './format';
+import { displayValue, fmtAxis, fmtInt, fmtPct, MONO, seriesColors, truncate, viewTitle, isDateCol } from './format';
 import Heatmap from './Heatmap';
 import { IconChevron } from './icons';
 import Pivot from './Pivot';
 import type { Mode, Palette } from './theme';
 import { SINGLE_KEY, toPctData, toWide, type WideDatum, toPctOfBaseline } from './transform';
+import { bandBuckets, bandsFor, fmtMonth, type ActiveBand } from '../engine';
 
 interface ChartAreaProps {
   agg: AggResult | null;
@@ -43,6 +45,11 @@ type TooltipMode = 'raw' | 'pctData' | 'expand';
 
 export default function ChartArea(p: ChartAreaProps) {
   const { agg, aggError, view, groupings, palette, mode } = p;
+  const activeBands = useMemo(() => bandsFor(view, groupings), [view, groupings]);
+  const xIsTime =
+    view.x?.kind === 'col' &&
+    isDateCol(view.x.col) &&
+    view.x.col === LENS_INFO[view.lens].dateField;
 
   const body = (() => {
     if (aggError) {
@@ -76,10 +83,10 @@ export default function ChartArea(p: ChartAreaProps) {
       case 'pivot':
         return <Pivot agg={agg} view={view} groupings={groupings} />;
       case 'heatmap':
-        return <Heatmap agg={agg} palette={palette} mode={mode} pct={view.pct} />;
+        return <Heatmap agg={agg} palette={palette} mode={mode} pct={view.pct} bandMarks={xIsTime ? heatmapBandMarks(activeBands, agg.xOrder, view.granularity) : undefined} />;
       default:
         return (
-          <RechartsChart agg={agg} view={view} palette={palette} chart={view.chart} />
+          <RechartsChart agg={agg} view={view} palette={palette} chart={view.chart} bands={xIsTime ? activeBands : []} />
         );
     }
   })();
@@ -105,6 +112,44 @@ export default function ChartArea(p: ChartAreaProps) {
         </div>
       </header>
       <div className="chart-body">{body}</div>
+      {agg && activeBands.length > 0 && (
+        <div className="band-chips" role="note" aria-label="Known data limitations in this view">
+          {activeBands.map((b) => {
+            const bandsDrawn =
+              xIsTime && ['line', 'bar', 'stackedBar', 'pctBar', 'area'].includes(view.chart);
+            const bb = bandBuckets(b, view.granularity);
+            let note = '';
+            if (bandsDrawn) {
+              const anyVisible = agg.xOrder.some((x) => x >= bb.start && x <= bb.end);
+              if (!anyVisible) {
+                note = ' The affected months have no plotted data in this view.';
+              } else {
+                const partials = [
+                  bb.startPartial && agg.xOrder.includes(bb.start) ? bb.start : null,
+                  bb.endPartial && agg.xOrder.includes(bb.end) ? bb.end : null,
+                ].filter((x): x is string => x !== null);
+                if (partials.length > 0) {
+                  note = ` Shaded ${partials.join(' and ')} ${partials.length > 1 ? 'are' : 'is'} only partially affected.`;
+                }
+              }
+            }
+            const full = `${b.short}, ${fmtMonth(b.from)} to ${fmtMonth(b.to)}. ${b.detail}${note}`;
+            return (
+              <span
+                key={b.id}
+                className={`band-chip sev-${b.severity}`}
+                tabIndex={0}
+                role="note"
+                aria-label={full}
+                title={`${b.detail}${note}`}
+              >
+                <i />
+                {b.short} · {fmtMonth(b.from)} - {fmtMonth(b.to)}
+              </span>
+            );
+          })}
+        </div>
+      )}
       {view.chart !== 'table' && agg && agg.rows.length > 0 && (
         <div className="table-disclosure">
           <button className="disclosure-btn" onClick={p.onToggleTable} aria-expanded={p.showTable}>
@@ -122,16 +167,39 @@ export default function ChartArea(p: ChartAreaProps) {
 
 // ---------------------------------------------------------------- recharts
 
+/** x labels covered by any band, with the strongest severity, for heatmap dots. */
+function heatmapBandMarks(
+  bands: ActiveBand[],
+  xOrder: string[],
+  gran: 'month' | 'quarter' | 'year',
+): Map<string, ActiveBand['severity']> | undefined {
+  if (bands.length === 0) return undefined;
+  const rank = { gap: 3, floor: 2, haze: 1 } as const;
+  const out = new Map<string, ActiveBand['severity']>();
+  for (const b of bands) {
+    const bb = bandBuckets(b, gran);
+    for (const x of xOrder) {
+      if (x >= bb.start && x <= bb.end) {
+        const prev = out.get(x);
+        if (!prev || rank[b.severity] > rank[prev]) out.set(x, b.severity);
+      }
+    }
+  }
+  return out.size > 0 ? out : undefined;
+}
+
 function RechartsChart({
   agg,
   view,
   palette,
   chart,
+  bands,
 }: {
   agg: AggResult;
   view: ViewState;
   palette: Palette;
   chart: ChartType;
+  bands: ActiveBand[];
 }) {
   const { data, seriesKeys } = useMemo(() => toWide(agg), [agg]);
   const single = seriesKeys.length === 1 && seriesKeys[0] === SINGLE_KEY;
@@ -239,12 +307,117 @@ function RechartsChart({
   );
   const margin = { top: 8, right: 12, bottom: 4, left: 4 };
 
+  // Coverage bands: severity-tinted rects behind the marks. Pixel edges come
+  // from recharts' own x scale so bands stay aligned across chart types
+  // (band scale for bars, point scale for line/area). pointer-events: none.
+  const drawBands = (cp: any): JSX.Element | null => {
+    if (!bands.length) return null;
+    const axis: any = Object.values(cp?.xAxisMap ?? {})[0];
+    const off = cp?.offset;
+    if (!axis?.scale || !off) return null;
+    const scale = axis.scale;
+    const bw = typeof scale.bandwidth === 'function' ? scale.bandwidth() : 0;
+    const xs = agg.xOrder;
+    const center = (i: number) => (bw > 0 ? scale(xs[i]) + bw / 2 : scale(xs[i]));
+    const leftEdge = (i: number) =>
+      bw > 0 ? scale(xs[i]) : i === 0 ? off.left : (center(i - 1) + center(i)) / 2;
+    const rightEdge = (i: number) =>
+      bw > 0
+        ? scale(xs[i]) + bw
+        : i === xs.length - 1
+          ? off.left + off.width
+          : (center(i) + center(i + 1)) / 2;
+    const ALPHA: Record<string, number> = { gap: 0.12, floor: 0.1, haze: 0.08 };
+    const rects: JSX.Element[] = [];
+    let needHatch = false;
+    for (const b of bands) {
+      const bb = bandBuckets(b, view.granularity);
+      let i0 = -1;
+      let i1 = -1;
+      for (let i = 0; i < xs.length; i++) {
+        if (xs[i] >= bb.start && xs[i] <= bb.end) {
+          if (i0 < 0) i0 = i;
+          i1 = i;
+        }
+      }
+      if (i0 < 0) continue;
+      const fill = b.severity === 'gap' ? palette.crit : palette.warn;
+      const alpha = ALPHA[b.severity];
+      // edge buckets a band only partially covers render at half strength
+      const segs: { a: number; z: number; scale: number }[] = [];
+      let a = i0;
+      if (xs[i0] === bb.start && bb.startPartial) {
+        segs.push({ a: i0, z: i0, scale: 0.5 });
+        a = i0 + 1;
+      }
+      let z = i1;
+      let endSeg: { a: number; z: number; scale: number } | null = null;
+      if (xs[i1] === bb.end && bb.endPartial && i1 >= a) {
+        endSeg = { a: i1, z: i1, scale: 0.5 };
+        z = i1 - 1;
+      }
+      if (a <= z) segs.push({ a, z, scale: 1 });
+      if (endSeg) segs.push(endSeg);
+      for (const seg of segs) {
+        const x1 = leftEdge(seg.a);
+        const x2 = rightEdge(seg.z);
+        if (!(x2 > x1)) continue;
+        rects.push(
+          <rect
+            key={`${b.id}-${seg.a}-${seg.scale}`}
+            x={x1}
+            y={off.top}
+            width={x2 - x1}
+            height={off.height}
+            fill={fill}
+            fillOpacity={alpha * seg.scale}
+          />,
+        );
+        if (b.severity === 'gap') {
+          needHatch = true;
+          rects.push(
+            <rect
+              key={`${b.id}-${seg.a}-${seg.scale}-h`}
+              x={x1}
+              y={off.top}
+              width={x2 - x1}
+              height={off.height}
+              fill="url(#sda-band-hatch)"
+              fillOpacity={seg.scale}
+            />,
+          );
+        }
+      }
+    }
+    if (rects.length === 0) return null;
+    return (
+      <g pointerEvents="none" aria-hidden>
+        {needHatch && (
+          <defs>
+            <pattern
+              id="sda-band-hatch"
+              width="7"
+              height="7"
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(45)"
+            >
+              <line x1="0" y1="0" x2="0" y2="7" stroke={palette.crit} strokeOpacity="0.25" strokeWidth="1.5" />
+            </pattern>
+          </defs>
+        )}
+        {rects}
+      </g>
+    );
+  };
+  const bandsLayer = bands.length > 0 ? <Customized component={drawBands} /> : null;
+
   let plot: JSX.Element;
   switch (chart) {
     case 'line':
       plot = (
         <LineChart data={plotData} margin={margin}>
           {grid}
+          {bandsLayer}
           {xAxis}
           {yAxis}
           {tooltip({ stroke: palette.axis, strokeWidth: 1 })}
@@ -267,6 +440,7 @@ function RechartsChart({
       plot = (
         <BarChart data={plotData} margin={margin} barCategoryGap="24%" barGap={2}>
           {grid}
+          {bandsLayer}
           {xAxis}
           {yAxis}
           {tooltip({ fill: palette.grid, fillOpacity: 0.4 })}
@@ -294,6 +468,7 @@ function RechartsChart({
           stackOffset={expandActive ? 'expand' : 'none'}
         >
           {grid}
+          {bandsLayer}
           {xAxis}
           {yAxis}
           {tooltip({ fill: palette.grid, fillOpacity: 0.4 })}
@@ -318,6 +493,7 @@ function RechartsChart({
       plot = (
         <AreaChart data={plotData} margin={margin} stackOffset={expandActive ? 'expand' : 'none'}>
           {grid}
+          {bandsLayer}
           {xAxis}
           {yAxis}
           {tooltip({ stroke: palette.axis, strokeWidth: 1 })}

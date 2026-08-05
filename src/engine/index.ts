@@ -6,6 +6,8 @@
 export { loadDataset, distinctValues } from './load';
 export { aggregate } from './aggregate';
 export { noticesFor } from './notices';
+export { bandsFor, bandBuckets, fmtMonth, COVERAGE } from './coverage';
+export type { ActiveBand, BandSeverity } from './coverage';
 export { encodeView, decodeView } from './view';
 export { loadGroupings, saveGroupings, PRESET_GROUPINGS } from './groupings';
 export { aggToCsv } from './csv';

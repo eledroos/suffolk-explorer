@@ -9,6 +9,8 @@ import {
   noticesFor,
   PRESET_GROUPINGS,
   saveGroupings,
+  bandsFor,
+  fmtMonth,
 } from './engine';
 import {
   DATA_URL,
@@ -280,6 +282,12 @@ export default function App() {
       header.push(`# Filters: ${filterParts.length > 0 ? filterParts.join('; ') : 'none'}`);
       for (const n of notices) {
         header.push(`# ${n.level === 'warn' ? 'Caution' : 'Note'}: ${n.title}. ${n.detail}`);
+      }
+      for (const b of bandsFor(view, effectiveGroupings)) {
+        // banner-backed entries already carried their detail in a Caution/Note line
+        header.push(
+          `# Coverage band (${b.severity}): ${b.short}, ${fmtMonth(b.from)} - ${fmtMonth(b.to)}.${b.banner ? '' : ` ${b.detail}`}`,
+        );
       }
       const csv = `${header.join('\n')}\n${aggToCsv(agg, view)}`;
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });

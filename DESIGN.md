@@ -42,7 +42,7 @@ Deploys to Cloudflare Pages; data optionally served from R2 via `VITE_DATA_URL`.
    filters (filtering on bucket names).
 6. **Data-quality notices** (`noticesFor`): 
    - lens=dispositions AND (no court filter or Suffolk Superior selected) AND
-     date range touches ≥ 2024-10 → warn: "Suffolk Superior dispositions are
+     date range touches Oct 2024 - Dec 2025 (capped at the dataset's disposition end; pinned by test) → warn: "Suffolk Superior dispositions are
      missing from Oct 2024 through Dec 2025 (~2,000 charges; records request
      pending). Totals for that period undercount the felony docket."
    - lens=filings AND range touches 2025 → info: "2025 filings run ~2-3% low:
