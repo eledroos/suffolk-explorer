@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Area,
   AreaChart,
@@ -144,22 +144,62 @@ function RechartsChart({
   const nameFor = (key: string) =>
     key === SINGLE_KEY ? MEASURES[view.measure] : displayValue(key);
 
+  // Legend click-to-isolate: display-only. Hidden series are removed from the
+  // RENDER, never from the math -- every transform below runs on the full key
+  // set first, so shares keep their denominators.
+  const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
+  const seriesSig = JSON.stringify(seriesKeys);
+  useEffect(() => {
+    setHidden((prev) => (prev.size > 0 ? new Set() : prev));
+  }, [view, seriesSig]);
+  // Render-time guard: between a view change and the reset effect, keys from
+  // the previous series dim must not act on the new chart. Only names present
+  // in the CURRENT key set count as hidden.
+  const effectiveHidden = useMemo(() => {
+    if (hidden.size === 0) return hidden;
+    const cur = new Set(seriesKeys);
+    return new Set([...hidden].filter((k) => cur.has(k)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hidden, seriesSig]);
+  const isolate = !single && effectiveHidden.size > 0 && effectiveHidden.size < seriesKeys.length;
+  const visibleKeys = isolate ? seriesKeys.filter((k) => !effectiveHidden.has(k)) : seriesKeys;
+  const toggleSeries = (k: string) => {
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k);
+      else {
+        next.add(k);
+        if (next.size >= seriesKeys.length) return new Set<string>(); // never hide everything
+      }
+      return next;
+    });
+  };
+
   // pctBar always normalizes; stacked bar/area normalize via stackOffset when
   // pct is on; line and grouped bar get pre-transformed data instead.
   const lensPct = view.pct && view.pctDenom === 'lens' && !!agg.xBaseline;
   const expand =
     (chart === 'pctBar' || ((chart === 'stackedBar' || chart === 'area') && view.pct)) && !lensPct;
   const transformPct = (chart === 'line' || chart === 'bar') && view.pct && !lensPct;
+  // With isolation active, recharts' stackOffset='expand' would renormalize
+  // over only the rendered series; pre-compute the shares over ALL series
+  // instead and stack the explicit percentages.
+  const expandExplicit = expand && isolate;
+  const expandActive = expand && !isolate;
   const plotData = useMemo(
     () =>
       lensPct
         ? toPctOfBaseline(data, seriesKeys, agg.xBaseline!)
-        : transformPct
+        : transformPct || expandExplicit
           ? toPctData(data, seriesKeys, agg.total)
           : data,
-    [lensPct, transformPct, data, seriesKeys, agg.total, agg.xBaseline],
+    [lensPct, transformPct, expandExplicit, data, seriesKeys, agg.total, agg.xBaseline],
   );
-  const tooltipMode: TooltipMode = expand ? 'expand' : lensPct || transformPct ? 'pctData' : 'raw';
+  const tooltipMode: TooltipMode = expandActive
+    ? 'expand'
+    : lensPct || transformPct || expandExplicit
+      ? 'pctData'
+      : 'raw';
 
   const tickStyle = { fill: palette.ink2, fontSize: 11, fontFamily: MONO };
   const xAxis = (
@@ -179,7 +219,11 @@ function RechartsChart({
       axisLine={false}
       width={46}
       tickFormatter={(v: number) =>
-        expand ? `${Math.round(v * 100)}%` : lensPct || transformPct ? `${fmtAxis(v)}%` : fmtAxis(v)
+        expandActive
+          ? `${Math.round(v * 100)}%`
+          : lensPct || transformPct || expandExplicit
+            ? `${fmtAxis(v)}%`
+            : fmtAxis(v)
       }
     />
   );
@@ -189,7 +233,7 @@ function RechartsChart({
       cursor={cursor}
       isAnimationActive={false}
       content={
-        <ChartTooltip palette={palette} tooltipMode={tooltipMode} nameFor={nameFor} colors={colors} />
+        <ChartTooltip palette={palette} tooltipMode={tooltipMode} nameFor={nameFor} colors={colors} sumPartial={isolate} />
       }
     />
   );
@@ -204,7 +248,7 @@ function RechartsChart({
           {xAxis}
           {yAxis}
           {tooltip({ stroke: palette.axis, strokeWidth: 1 })}
-          {seriesKeys.map((k) => (
+          {visibleKeys.map((k) => (
             <Line
               key={k}
               dataKey={k}
@@ -226,7 +270,7 @@ function RechartsChart({
           {xAxis}
           {yAxis}
           {tooltip({ fill: palette.grid, fillOpacity: 0.4 })}
-          {seriesKeys.map((k) => (
+          {visibleKeys.map((k) => (
             <Bar
               key={k}
               dataKey={k}
@@ -247,13 +291,13 @@ function RechartsChart({
           data={plotData}
           margin={margin}
           barCategoryGap="24%"
-          stackOffset={expand ? 'expand' : 'none'}
+          stackOffset={expandActive ? 'expand' : 'none'}
         >
           {grid}
           {xAxis}
           {yAxis}
           {tooltip({ fill: palette.grid, fillOpacity: 0.4 })}
-          {seriesKeys.map((k) => (
+          {visibleKeys.map((k) => (
             <Bar
               key={k}
               dataKey={k}
@@ -272,12 +316,12 @@ function RechartsChart({
     case 'area':
     default:
       plot = (
-        <AreaChart data={plotData} margin={margin} stackOffset={expand ? 'expand' : 'none'}>
+        <AreaChart data={plotData} margin={margin} stackOffset={expandActive ? 'expand' : 'none'}>
           {grid}
           {xAxis}
           {yAxis}
           {tooltip({ stroke: palette.axis, strokeWidth: 1 })}
-          {seriesKeys.map((k) => (
+          {visibleKeys.map((k) => (
             <Area
               key={k}
               dataKey={k}
@@ -303,14 +347,43 @@ function RechartsChart({
         </ResponsiveContainer>
       </div>
       {!single && seriesKeys.length > 1 && (
-        <div className="chart-legend" aria-label="Legend">
-          {seriesKeys.map((k) => (
-            <span key={k} className="legend-item">
-              <i style={{ background: colors[k] }} />
-              {truncate(displayValue(k), 28)}
+        <>
+          <div className="chart-legend" role="group" aria-label="Legend. Click a series to hide or show it.">
+            {seriesKeys.map((k) => (
+              <button
+                key={k}
+                type="button"
+                className={`legend-item${effectiveHidden.has(k) ? ' off' : ''}`}
+                aria-pressed={!effectiveHidden.has(k)}
+                aria-label={`${displayValue(k)} series, ${effectiveHidden.has(k) ? 'hidden' : 'visible'}. Toggle visibility; display only.`}
+                title={effectiveHidden.has(k) ? 'Show this series' : 'Hide this series (display only)'}
+                onClick={() => toggleSeries(k)}
+              >
+                <i style={{ background: colors[k] }} />
+                {truncate(displayValue(k), 28)}
+              </button>
+            ))}
+          </div>
+          <p className="legend-note">
+            <span role="status">
+              {isolate
+                ? `Showing ${visibleKeys.length} of ${seriesKeys.length} series${
+                    view.pct || chart === 'pctBar'
+                      ? '; percentages keep the full denominator'
+                      : ' (display only)'
+                  }.`
+                : ''}
             </span>
-          ))}
-        </div>
+            {isolate && (
+              <>
+                {' '}
+                <button type="button" className="linklike" onClick={() => setHidden(new Set())}>
+                  Show all
+                </button>
+              </>
+            )}
+          </p>
+        </>
       )}
     </div>
   );
@@ -319,7 +392,7 @@ function RechartsChart({
 // ---------------------------------------------------------------- tooltip
 
 function ChartTooltip(props: any) {
-  const { active, payload, label, palette, tooltipMode, nameFor, colors } = props as {
+  const { active, payload, label, palette, tooltipMode, nameFor, colors, sumPartial } = props as {
     active?: boolean;
     payload?: { dataKey: string; value: number }[];
     label?: string;
@@ -327,6 +400,7 @@ function ChartTooltip(props: any) {
     tooltipMode: TooltipMode;
     nameFor: (k: string) => string;
     colors: Record<string, string>;
+    sumPartial?: boolean;
   };
   if (!active || !payload || payload.length === 0) return null;
 
@@ -367,7 +441,7 @@ function ChartTooltip(props: any) {
         <div className="tt-row tt-sum">
           <i style={{ background: 'transparent' }} />
           <span className="tt-name" style={{ color: palette.ink3 }}>
-            Sum
+            {sumPartial ? 'Sum of shown' : 'Sum'}
           </span>
           <span className="tt-value" style={{ color: palette.ink2 }}>
             {fmtInt(sum)}

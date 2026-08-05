@@ -144,11 +144,23 @@ export default function App() {
   }, [effectiveGroupings]);
 
   const patch = useCallback((p: Partial<ViewState>) => {
-    setView((v) => ({ ...v, ...p }));
+    setView((v) => {
+      // Re-clicking an already-active control is a no-op: keep the same view
+      // identity so display state (legend isolation) is not reset.
+      let changed = false;
+      for (const k of Object.keys(p) as (keyof ViewState)[]) {
+        if (JSON.stringify(v[k]) !== JSON.stringify(p[k])) {
+          changed = true;
+          break;
+        }
+      }
+      return changed ? { ...v, ...p } : v;
+    });
   }, []);
 
   const onLens = useCallback((lens: Lens) => {
     setView((v) => {
+      if (v.lens === lens) return v;
       const next = { ...v, lens };
       return sanitizeView(next, effectiveGroupings);
     });
