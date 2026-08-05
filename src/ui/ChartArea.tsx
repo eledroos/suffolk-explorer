@@ -87,7 +87,7 @@ export default function ChartArea(p: ChartAreaProps) {
         return <Heatmap agg={agg} palette={palette} mode={mode} pct={view.pct} bandMarks={xIsTime ? heatmapBandMarks(activeBands, agg.xOrder, view.granularity) : undefined} />;
       default:
         return (
-          <RechartsChart agg={agg} view={view} palette={palette} chart={view.chart} bands={xIsTime ? activeBands : []} />
+          <RechartsChart agg={agg} view={view} palette={palette} chart={view.chart} bands={xIsTime ? activeBands : []} timeAxis={xIsTime} />
         );
     }
   })();
@@ -195,12 +195,14 @@ function RechartsChart({
   palette,
   chart,
   bands,
+  timeAxis,
 }: {
   agg: AggResult;
   view: ViewState;
   palette: Palette;
   chart: ChartType;
   bands: ActiveBand[];
+  timeAxis: boolean;
 }) {
   const { data, seriesKeys } = useMemo(() => toWide(agg), [agg]);
   const single = seriesKeys.length === 1 && seriesKeys[0] === SINGLE_KEY;
@@ -392,7 +394,7 @@ function RechartsChart({
     }
     // DA-era boundaries as first-class rules (drawn whenever visible)
     const eraMarks: JSX.Element[] = [];
-    for (const eb of ERA_BOUNDARIES) {
+    for (const eb of timeAxis ? ERA_BOUNDARIES : []) {
       const [ey, em] = eb.date.split('-').map(Number);
       const label =
         view.granularity === 'year'
@@ -415,11 +417,12 @@ function RechartsChart({
             strokeDasharray="4 3"
           />
           <text
-            x={x + 4}
+            x={x + (x > off.left + off.width - 64 ? -4 : 4)}
             y={off.top + 11}
             fill={cpPalette.ink2}
             fontSize={10.5}
             fontFamily="system-ui, sans-serif"
+            textAnchor={x > off.left + off.width - 64 ? 'end' : 'start'}
           >
             {eb.label} {'\u2192'}
           </text>

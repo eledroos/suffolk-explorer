@@ -614,9 +614,9 @@ describe('history dataset (2006-2021) merge', () => {
       new URL('../public/data/history.parquet', import.meta.url).pathname,
     );
     const hist = await loadDataset(histPath);
-    expect(hist.rowCount).toBe(1_094_387);
+    expect(hist.rowCount).toBe(1_092_860);
     const merged = mergeDatasets(ds, hist);
-    expect(merged.rowCount).toBe(200_630 + 1_094_387);
+    expect(merged.rowCount).toBe(200_630 + 1_092_860);
     const v: ViewState = {
       ...DEFAULT_VIEW,
       history: true,
@@ -649,5 +649,12 @@ describe('history dataset (2006-2021) merge', () => {
     expect(bandsFor(view({ lens: 'dispositions' }), []).map((b) => b.id)).not.toContain('disp-2021-snapshot');
     // the window-open note yields to history
     expect(noticesFor(histView, []).some((n) => n.title.includes('Window opens'))).toBe(false);
+    // Both-lens row inflation and cross-seam distinct caveats gate on history
+    const both = view({ lens: 'all', history: true });
+    expect(noticesFor(both, []).some((n) => n.title.includes('counts rows'))).toBe(true);
+    expect(noticesFor(view({ lens: 'all' }), []).some((n) => n.title.includes('counts rows'))).toBe(false);
+    const cases = view({ lens: 'filings', history: true, measure: 'cases' });
+    expect(noticesFor(cases, []).some((n) => n.title.includes('seam'))).toBe(true);
+    expect(noticesFor(view({ lens: 'filings', history: true }), []).some((n) => n.title.includes('seam'))).toBe(false);
   });
 });

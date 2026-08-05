@@ -26,6 +26,8 @@ import {
 interface SidebarProps {
   view: ViewState;
   lensCounts: Record<Lens, number>;
+  historyLoading: boolean;
+  historyReady: boolean;
   groupings: Grouping[];
   onPatch: (p: Partial<ViewState>) => void;
   onLens: (lens: Lens) => void;
@@ -82,7 +84,7 @@ function radioGroupKeys(
 }
 
 export default function Sidebar({
-  lensCounts, view, groupings, onPatch, onLens }: SidebarProps) {
+  lensCounts, historyLoading, historyReady, view, groupings, onPatch, onLens }: SidebarProps) {
   const lensInfo = LENS_INFO[view.lens];
   const catDims = COLUMNS.filter((c) => c.groupable && c.kind === 'cat');
   const xIsTime = view.x?.kind === 'col' && isDateCol(view.x.col);
@@ -116,9 +118,10 @@ export default function Sidebar({
         </div>
         <p className="side-blurb">
           {view.history
-            ? lensInfo.blurb
-                .replace('Jan 2022 - Dec 2025', 'Jan 2006 - Dec 2025')
-                .replace('Jan 2022 – Dec 2025', 'Jan 2006 - Dec 2025')
+            ? lensInfo.blurb.replace(
+                'Jan 2022 - Dec 2025',
+                view.lens === 'dispositions' ? 'Jan 2000 - Dec 2025' : 'Jan 2006 - Dec 2025',
+              )
             : lensInfo.blurb}
         </p>
         <label className="field field-row history-toggle">
@@ -133,10 +136,12 @@ export default function Sidebar({
             <i />
           </span>
         </label>
-        <p className="side-footnote">
+        <p className="side-footnote" aria-live="polite">
           {view.history
-            ? 'History loaded: filings 2006-2020 from the internal dashboard extract, 2021 from the Jan 2022 DAMION extract. 2021 dispositions are single-source.'
-            : 'Adds 1.09M charges, 2006-2021 (17 MB download). Sources differ from 2022-2025; caveats appear on the charts.'}
+            ? historyLoading || !historyReady
+              ? 'Loading the 2006-2021 history (17 MB) ...'
+              : 'History loaded: filings 2006-2020 from the internal dashboard extract (dispositions back to 2000), 2021 from the Jan 2022 DAMION extract. 2021 dispositions are single-source.'
+            : 'Adds 1.09M charges, filings 2006-2021 and dispositions 2000-2021 (17 MB download). Sources differ from 2022-2025; caveats appear on the charts.'}
         </p>
       </section>
 

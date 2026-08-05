@@ -217,8 +217,11 @@ export default function App() {
   // ---- 2006-2021 history: lazy-loaded second parquet, merged on demand ----
   const [histDs, setHistDs] = useState<Dataset | null>(null);
   const [histLoading, setHistLoading] = useState(false);
+  const histInFlight = useRef(false); // ref, not state: survives StrictMode double-invoke
+  const mergedRef = useRef<{ hist: Dataset; merged: Dataset } | null>(null);
   useEffect(() => {
-    if (!view.history || histDs || histLoading) return;
+    if (!view.history || histDs || histInFlight.current) return;
+    histInFlight.current = true;
     setHistLoading(true);
     loadDataset(HISTORY_DATA_URL)
       .then((ds: Dataset) => setHistDs(ds))
@@ -228,12 +231,21 @@ export default function App() {
         );
         patch({ history: false });
       })
-      .finally(() => setHistLoading(false));
-  }, [view.history, histDs, histLoading, patch]);
+      .finally(() => {
+        histInFlight.current = false;
+        setHistLoading(false);
+      });
+  }, [view.history, histDs, patch]);
 
   const activeDs = useMemo<Dataset | null>(() => {
     if (load.status !== 'ready') return null;
-    if (view.history && histDs) return mergeDatasets(load.ds, histDs);
+    if (view.history && histDs) {
+      // cache the merge so re-toggling history is free
+      if (mergedRef.current?.hist !== histDs) {
+        mergedRef.current = { hist: histDs, merged: mergeDatasets(load.ds, histDs) };
+      }
+      return mergedRef.current.merged;
+    }
     return load.ds;
   }, [load, view.history, histDs]);
 
@@ -404,7 +416,7 @@ export default function App() {
 
       {load.status === 'ready' && (
         <div className="app-body">
-          <Sidebar view={view} lensCounts={lensCounts} groupings={effectiveGroupings} onPatch={patch} onLens={onLens} />
+          <Sidebar view={view} lensCounts={lensCounts} historyLoading={histLoading} historyReady={histDs !== null} groupings={effectiveGroupings} onPatch={patch} onLens={onLens} />
           <main className="main">
             <Notices notices={notices} dismissed={dismissed} onDismiss={dismissNotice} />
             <ChartArea

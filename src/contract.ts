@@ -170,6 +170,7 @@ export const HISTORY_DATA_URL: string =
 
 /** DA administration boundaries (first day in office), for era rules. */
 export const ERA_BOUNDARIES: { date: string; label: string }[] = [
+  { date: '2002-02-01', label: 'Conley' }, // appointed Feb 2002 (month precision)
   { date: '2019-01-02', label: 'Rollins' },
   { date: '2022-01-20', label: 'Hayden' },
 ];

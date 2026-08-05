@@ -118,6 +118,26 @@ export const COVERAGE: CoverageEntry[] = [
     when: (view) => view.history === true,
   },
   {
+    id: 'both-lens-split-rows',
+    lenses: ['all'],
+    short: 'Both lens counts rows, not charges',
+    detail:
+      'With history on, a charge filed in one source era and resolved in another appears as two rows (about 4% of the Both view). Use the Filings or Dispositions lens for counts; Both is for browsing.',
+    level: 'info',
+    banner: true,
+    when: (view) => view.history === true,
+  },
+  {
+    id: 'distinct-across-seam',
+    lenses: ['filings', 'dispositions', 'all'],
+    short: 'Distinct counts cannot cross the 2021/2022 seam',
+    detail:
+      'The 2006-2020 extract is anonymized, so the same person or case active in both eras counts twice. Treat cross-era distinct cases and people as upper bounds.',
+    level: 'info',
+    banner: true,
+    when: (view) => view.history === true && view.measure !== 'charges',
+  },
+  {
     id: 'right-censor',
     lenses: ['filings'],
     short: 'Outcomes are right-censored',
