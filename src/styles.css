@@ -342,19 +342,23 @@ select {
   flex: none;
   width: 228px;
   overflow-y: auto;
-  padding: 14px 14px 24px;
+  padding: 12px 10px 24px;
   background: var(--surface);
   border-right: 1px solid var(--grid);
 }
 
+/* Each sidebar group is a quiet block on the page tone: the inverse of the
+   chart card (surface on page), same border and radius vocabulary. Grouping
+   reads at a squint without hairline archaeology. */
 .side-section {
-  padding-bottom: 16px;
-  margin-bottom: 14px;
-  border-bottom: 1px solid var(--grid);
+  padding: 10px 11px 12px;
+  margin-bottom: 10px;
+  background: var(--page);
+  border: 1px solid var(--grid);
+  border-radius: 8px;
 }
 
 .side-section:last-child {
-  border-bottom: none;
   margin-bottom: 0;
 }
 
@@ -370,11 +374,18 @@ select {
   color: var(--ink3);
 }
 
+/* Footnotes hug the control they explain (tight), then leave generous room
+   before the next field (rhythm: pairs read as pairs). */
 .side-footnote {
-  margin-top: 6px;
+  margin-top: -4px;
+  margin-bottom: 12px;
   font-size: 11px;
   line-height: 1.45;
   color: var(--ink3);
+}
+
+.side-footnote:last-child {
+  margin-bottom: 0;
 }
 
 /* segmented controls */

@@ -176,7 +176,7 @@ export default function Sidebar({
       </section>
 
       <section className="side-section">
-        <h3 className="microlabel">Encodings</h3>
+        <h3 className="microlabel">Axes &amp; series</h3>
 
         <label className="field">
           <span className="field-label">{view.chart === 'pivot' ? 'Columns (x)' : 'X axis'}</span>
@@ -267,6 +267,10 @@ export default function Sidebar({
             </select>
           </span>
         </label>
+      </section>
+
+      <section className="side-section">
+        <h3 className="microlabel">Counting</h3>
 
         <label className="field">
           <span className="field-label">Measure</span>
