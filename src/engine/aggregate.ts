@@ -239,9 +239,38 @@ export function aggregate(ds: Dataset, view: ViewState, groupings: Grouping[]): 
     }
   }
 
+  // --- unfiltered per-x baseline for pctDenom==='lens' ---
+  // Same lens window and date range, same x bucketing, NO value filters. Rows
+  // that cannot be placed on the x axis are excluded from both sides.
+  let xBaseline: Record<string, number> | undefined;
+  if (view.pct && view.pctDenom === 'lens') {
+    const baseCounts = new Map<string, number>();
+    const baseSets = distinct ? new Map<string, Set<number>>() : null;
+    for (let i = 0; i < n; i++) {
+      if (windowFlag && windowFlag[i] === 0) continue;
+      if (fromDay !== null && (!lensDates || lensDates[i] < fromDay || lensDates[i] === NULL_DATE)) continue;
+      if (toDay !== null && (!lensDates || lensDates[i] > toDay || lensDates[i] === NULL_DATE)) continue;
+      if (xr.dateArr && xr.dateArr[i] === NULL_DATE) continue;
+      const xL = xr.get(i);
+      if (distinct) {
+        const id = idArr ? idArr[i] : 0;
+        let bs = baseSets!.get(xL);
+        if (!bs) baseSets!.set(xL, (bs = new Set()));
+        bs.add(id);
+      } else {
+        baseCounts.set(xL, (baseCounts.get(xL) ?? 0) + 1);
+      }
+    }
+    xBaseline = {};
+    if (distinct) for (const [x, st] of baseSets!) xBaseline[x] = st.size;
+    else for (const [x, c] of baseCounts) xBaseline[x] = c;
+  }
+
   // --- x order: chronological for time, descending by value otherwise ---
   const xVal = (x: string): number => (distinct ? (xSets!.get(x)?.size ?? 0) : (xCounts.get(x) ?? 0));
-  const xLabels = distinct ? [...xSets!.keys()] : [...xCounts.keys()];
+  const xLabelSet = new Set<string>(distinct ? xSets!.keys() : xCounts.keys());
+  if (xBaseline) for (const x of Object.keys(xBaseline)) xLabelSet.add(x);
+  const xLabels = [...xLabelSet];
   const xOrder = xr.isTime
     ? xLabels.sort()
     : xLabels.sort((a, b) => xVal(b) - xVal(a) || (a < b ? -1 : a > b ? 1 : 0));
@@ -303,5 +332,6 @@ export function aggregate(ds: Dataset, view: ViewState, groupings: Grouping[]): 
     seriesOrder,
     total: distinct ? totalSet!.size : totalCount,
     filteredRowCount,
+    ...(xBaseline ? { xBaseline } : {}),
   };
 }

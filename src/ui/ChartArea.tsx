@@ -26,7 +26,7 @@ import Heatmap from './Heatmap';
 import { IconChevron } from './icons';
 import Pivot from './Pivot';
 import type { Mode, Palette } from './theme';
-import { SINGLE_KEY, toPctData, toWide, type WideDatum } from './transform';
+import { SINGLE_KEY, toPctData, toWide, type WideDatum, toPctOfBaseline } from './transform';
 
 interface ChartAreaProps {
   agg: AggResult | null;
@@ -96,6 +96,11 @@ export default function ChartArea(p: ChartAreaProps) {
                 ? ` · ${fmtInt(agg.filteredRowCount)} charge rows in view`
                 : ` · ${fmtInt(agg.total)} distinct ${view.measure === 'cases' ? 'cases' : 'people'} · from ${fmtInt(agg.filteredRowCount)} charge rows in view`
               : ''}
+            {view.pct && view.pctDenom === 'lens'
+              ? ` · % of ALL ${view.lens === 'dispositions' ? 'dispositions' : view.lens === 'filings' ? 'filings' : 'charge rows'} per period, ignoring filters`
+              : view.pct
+                ? ' · % within the filtered view'
+                : ''}
           </p>
         </div>
       </header>
@@ -141,13 +146,20 @@ function RechartsChart({
 
   // pctBar always normalizes; stacked bar/area normalize via stackOffset when
   // pct is on; line and grouped bar get pre-transformed data instead.
-  const expand = chart === 'pctBar' || ((chart === 'stackedBar' || chart === 'area') && view.pct);
-  const transformPct = (chart === 'line' || chart === 'bar') && view.pct;
+  const lensPct = view.pct && view.pctDenom === 'lens' && !!agg.xBaseline;
+  const expand =
+    (chart === 'pctBar' || ((chart === 'stackedBar' || chart === 'area') && view.pct)) && !lensPct;
+  const transformPct = (chart === 'line' || chart === 'bar') && view.pct && !lensPct;
   const plotData = useMemo(
-    () => (transformPct ? toPctData(data, seriesKeys, agg.total) : data),
-    [transformPct, data, seriesKeys, agg.total],
+    () =>
+      lensPct
+        ? toPctOfBaseline(data, seriesKeys, agg.xBaseline!)
+        : transformPct
+          ? toPctData(data, seriesKeys, agg.total)
+          : data,
+    [lensPct, transformPct, data, seriesKeys, agg.total, agg.xBaseline],
   );
-  const tooltipMode: TooltipMode = expand ? 'expand' : transformPct ? 'pctData' : 'raw';
+  const tooltipMode: TooltipMode = expand ? 'expand' : lensPct || transformPct ? 'pctData' : 'raw';
 
   const tickStyle = { fill: palette.ink2, fontSize: 11, fontFamily: MONO };
   const xAxis = (
@@ -167,7 +179,7 @@ function RechartsChart({
       axisLine={false}
       width={46}
       tickFormatter={(v: number) =>
-        expand ? `${Math.round(v * 100)}%` : transformPct ? `${fmtAxis(v)}%` : fmtAxis(v)
+        expand ? `${Math.round(v * 100)}%` : lensPct || transformPct ? `${fmtAxis(v)}%` : fmtAxis(v)
       }
     />
   );

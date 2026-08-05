@@ -88,7 +88,8 @@ export interface ViewState {
   series: Dim | null;               // color / stacking dimension
   granularity: Granularity;
   measure: Measure;
-  pct: boolean;                     // show % of total instead of raw
+  pct: boolean;                     // show % instead of raw counts
+  pctDenom: 'view' | 'lens';        // 'view' = share within filtered view; 'lens' = share of ALL lens rows per x
   filters: Record<string, string[]>; // col -> selected values (empty/absent = all); date cols excluded
   dateFrom: string | null;          // 'YYYY-MM-DD' applied to the lens date field
   dateTo: string | null;
@@ -96,7 +97,7 @@ export interface ViewState {
 
 export const DEFAULT_VIEW: ViewState = {
   lens: 'filings', chart: 'line', x: { kind: 'col', col: 'filing_date' }, series: null,
-  granularity: 'month', measure: 'charges', pct: false, filters: {}, dateFrom: null, dateTo: null,
+  granularity: 'month', measure: 'charges', pct: false, pctDenom: 'view', filters: {}, dateFrom: null, dateTo: null,
 };
 
 // ---------- engine API (implemented in src/engine/index.ts) ----------
@@ -118,6 +119,8 @@ export interface AggResult {
   seriesOrder: string[];   // display order for series values
   total: number;           // measure over the whole filtered set (for pct)
   filteredRowCount: number;
+  /** Present when pct && pctDenom==='lens': x -> UNFILTERED measure total (lens window + dates only). */
+  xBaseline?: Record<string, number>;
 }
 
 export interface Notice { level: 'warn' | 'info'; title: string; detail: string }

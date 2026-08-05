@@ -76,3 +76,23 @@ export function valueGrid(agg: AggResult): Map<string, Map<string | null, number
   }
   return m;
 }
+
+/**
+ * Percent-of-baseline transform for pctDenom === 'lens'. Each value becomes
+ * its share (0-100) of the UNFILTERED lens total for its x bucket.
+ */
+export function toPctOfBaseline(
+  data: WideDatum[],
+  keys: string[],
+  baseline: Record<string, number>,
+): WideDatum[] {
+  return data.map((d) => {
+    const out: WideDatum = { __x: d.__x };
+    const base = baseline[d.__x] ?? 0;
+    for (const k of keys) {
+      const v = typeof d[k] === 'number' ? (d[k] as number) : 0;
+      out[k] = base > 0 ? (v / base) * 100 : 0;
+    }
+    return out;
+  });
+}

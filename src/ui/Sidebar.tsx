@@ -263,21 +263,41 @@ export default function Sidebar({
               : 'Each person counts once, across all of their cases and charges.'}
         </p>
 
-        <label className="field field-row">
-          <span className="field-label">% of total</span>
-          <span className={`switch${view.pct ? ' on' : ''}`}>
-            <input
-              type="checkbox"
-              checked={view.pct}
-              onChange={(e) => onPatch({ pct: e.target.checked })}
-              aria-label="Show values as percent of total"
-            />
-            <i />
-          </span>
-        </label>
-        <p className="side-footnote">
-          With a series, % is each series' share within an x value. Without one, it is the share of
-          the filtered total.
+        <div className="field">
+          <span className="field-label">Values</span>
+          <div className="seg seg-vert" role="radiogroup" aria-label="Value mode">
+            {([
+              { key: 'count', label: 'Counts' },
+              { key: 'view', label: '% within view' },
+              { key: 'lens', label: '% of period total' },
+            ] as const).map((m) => {
+              const active =
+                m.key === 'count' ? !view.pct : view.pct && view.pctDenom === (m.key as 'view' | 'lens');
+              return (
+                <button
+                  key={m.key}
+                  className={`seg-opt${active ? ' on' : ''}`}
+                  role="radio"
+                  aria-checked={active}
+                  tabIndex={active ? 0 : -1}
+                  onClick={() =>
+                    m.key === 'count'
+                      ? onPatch({ pct: false })
+                      : onPatch({ pct: true, pctDenom: m.key as 'view' | 'lens' })
+                  }
+                >
+                  {m.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <p className="side-footnote" aria-live="polite">
+          {!view.pct
+            ? 'Raw counts.'
+            : view.pctDenom === 'lens'
+              ? `Share of ALL ${view.lens === 'dispositions' ? 'dispositions' : view.lens === 'filings' ? 'filings' : 'charge rows'} in each period. Filters and series choose the numerator; the denominator ignores them. Tables and CSV keep counts.`
+              : "With a series, % is each series' share within an x value. Without one, it is the share of the filtered total."}
         </p>
       </section>
     </aside>

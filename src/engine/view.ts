@@ -96,6 +96,7 @@ export function decodeView(hash: string): ViewState | null {
     }
     if (typeof p.measure === 'string' && p.measure in MEASURES) view.measure = p.measure as Measure;
     if (typeof p.pct === 'boolean') view.pct = p.pct;
+    if (p.pctDenom === 'view' || p.pctDenom === 'lens') view.pctDenom = p.pctDenom;
     const filters = sanitizeFilters(p.filters);
     if (filters !== undefined) view.filters = filters;
     if (p.dateFrom === null || (typeof p.dateFrom === 'string' && ISO_DATE.test(p.dateFrom))) {

@@ -30,13 +30,18 @@ export default function AggTable({ agg, view, groupings }: AggTableProps) {
       : dimLabel(view.x, groupings);
   const seriesLabel = dimLabel(view.series, groupings);
 
+  const lensPct = view.pct && view.pctDenom === 'lens' && !!agg.xBaseline;
   const rows = useMemo<TableRow[]>(() => {
     const xSums = new Map<string, number>();
-    if (withSeries) {
+    if (withSeries && !lensPct) {
       for (const r of agg.rows) xSums.set(r.x, (xSums.get(r.x) ?? 0) + r.value);
     }
     return agg.rows.map((r) => {
-      const base = withSeries ? xSums.get(r.x) ?? 0 : agg.total;
+      const base = lensPct
+        ? agg.xBaseline![r.x] ?? 0
+        : withSeries
+          ? xSums.get(r.x) ?? 0
+          : agg.total;
       return {
         x: r.x,
         series: r.series,
@@ -44,7 +49,7 @@ export default function AggTable({ agg, view, groupings }: AggTableProps) {
         share: base > 0 ? (r.value / base) * 100 : 0,
       };
     });
-  }, [agg, withSeries]);
+  }, [agg, withSeries, lensPct]);
 
   const sorted = useMemo(() => {
     const xIndex = new Map(agg.xOrder.map((x, i) => [x, i]));
@@ -110,7 +115,13 @@ export default function AggTable({ agg, view, groupings }: AggTableProps) {
               <button
                 className="th-sort"
                 onClick={() => clickSort('share')}
-                title={withSeries ? 'Share within each x value' : 'Share of the filtered total'}
+                title={
+                  lensPct
+                    ? 'Share of ALL rows in this lens for that x, ignoring filters'
+                    : withSeries
+                      ? 'Share within each x value'
+                      : 'Share of the filtered total'
+                }
               >
                 Share {arrow('share')}
               </button>
@@ -139,7 +150,14 @@ export default function AggTable({ agg, view, groupings }: AggTableProps) {
             <td colSpan={withSeries ? 2 : 1}>Sum of rows</td>
             <td className="num">{fmtInt(sumValues)}</td>
             <td className="num dim">
-              {view.measure === 'charges' ? '100.0%' : `total ${fmtInt(agg.total)}`}
+              {lensPct
+                ? (() => {
+                    const denom = Object.values(agg.xBaseline!).reduce((a, b) => a + b, 0);
+                    return denom > 0 ? fmtPct((100 * sumValues) / denom) : '';
+                  })()
+                : view.measure === 'charges'
+                  ? '100.0%'
+                  : `total ${fmtInt(agg.total)}`}
             </td>
           </tr>
         </tfoot>

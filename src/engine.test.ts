@@ -469,3 +469,97 @@ describe('aggToCsv', () => {
     expect(lines[1]).toBe('Hayden,160036');
   });
 });
+
+describe('pctDenom lens: percent-of-period baselines (adversarial ground truth from pandas)', () => {
+  const YY = 'YY (decline list)';
+  it('YY share of ALL filings by year: numerators and baselines exact', async () => {
+    const view: ViewState = {
+      ...DEFAULT_VIEW,
+      lens: 'filings',
+      granularity: 'year',
+      x: { kind: 'col', col: 'filing_date' },
+      pct: true,
+      pctDenom: 'lens',
+      filters: { dtp_class: [YY] },
+    };
+    const agg = aggregate(ds, view, []);
+    expect(agg.xBaseline).toBeDefined();
+    expect(agg.xBaseline!['2022']).toBe(37_399);
+    expect(agg.xBaseline!['2023']).toBe(39_260);
+    expect(agg.xBaseline!['2024']).toBe(43_880);
+    expect(agg.xBaseline!['2025']).toBe(40_595);
+    const val = (x: string) => agg.rows.find((r) => r.x === x)?.value ?? 0;
+    expect(val('2022')).toBe(8_486);
+    expect(val('2023')).toBe(9_168);
+    expect(val('2024')).toBe(10_654);
+    expect(val('2025')).toBe(10_798);
+    // shares to 4 decimals, as computed independently in pandas
+    expect((100 * val('2022')) / agg.xBaseline!['2022']).toBeCloseTo(22.6904, 3);
+    expect((100 * val('2025')) / agg.xBaseline!['2025']).toBeCloseTo(26.5993, 3);
+  });
+
+  it('YY + Conclusively prosecutorial share of ALL dispositions by year', async () => {
+    const view: ViewState = {
+      ...DEFAULT_VIEW,
+      lens: 'dispositions',
+      granularity: 'year',
+      x: { kind: 'col', col: 'disposition_date' },
+      pct: true,
+      pctDenom: 'lens',
+      filters: { dtp_class: [YY], prosecutorial_call: ['Conclusively prosecutorial'] },
+    };
+    const agg = aggregate(ds, view, []);
+    const val = (x: string) => agg.rows.find((r) => r.x === x)?.value ?? 0;
+    expect(val('2022')).toBe(3_728);
+    expect(val('2023')).toBe(3_974);
+    expect(val('2024')).toBe(4_123);
+    expect(val('2025')).toBe(3_946);
+    expect(agg.xBaseline!['2022']).toBe(37_091);
+    expect(agg.xBaseline!['2023']).toBe(38_536);
+    expect(agg.xBaseline!['2024']).toBe(41_146);
+    expect(agg.xBaseline!['2025']).toBe(37_147);
+  });
+
+  it('categorical x: YY share per court, baseline = each court\'s unfiltered filings', async () => {
+    const view: ViewState = {
+      ...DEFAULT_VIEW,
+      lens: 'filings',
+      x: { kind: 'col', col: 'court' },
+      pct: true,
+      pctDenom: 'lens',
+      filters: { dtp_class: [YY] },
+    };
+    const agg = aggregate(ds, view, []);
+    const val = (x: string) => agg.rows.find((r) => r.x === x)?.value ?? 0;
+    expect(val('Boston Municipal Court')).toBe(13_075);
+    expect(agg.xBaseline!['Boston Municipal Court']).toBe(35_635);
+    expect(val('Dorchester Court')).toBe(6_148);
+    expect(agg.xBaseline!['Dorchester Court']).toBe(30_741);
+  });
+
+  it('distinct-cases measure: cases with a YY charge over all cases filed that year', async () => {
+    const view: ViewState = {
+      ...DEFAULT_VIEW,
+      lens: 'filings',
+      granularity: 'year',
+      x: { kind: 'col', col: 'filing_date' },
+      measure: 'cases',
+      pct: true,
+      pctDenom: 'lens',
+      filters: { dtp_class: [YY] },
+    };
+    const agg = aggregate(ds, view, []);
+    const val = (x: string) => agg.rows.find((r) => r.x === x)?.value ?? 0;
+    expect(val('2022')).toBe(6_551);
+    expect(agg.xBaseline!['2022']).toBe(17_727);
+    expect(val('2023')).toBe(7_085);
+    expect(agg.xBaseline!['2023']).toBe(18_928);
+  });
+
+  it('regression: pctDenom absent from an old URL decodes to view mode', () => {
+    const legacy = encodeView({ ...DEFAULT_VIEW, pct: true });
+    const decoded = decodeView(legacy);
+    expect(decoded?.pct).toBe(true);
+    expect(decoded?.pctDenom).toBe('view');
+  });
+});

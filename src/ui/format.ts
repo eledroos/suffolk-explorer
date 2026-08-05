@@ -75,6 +75,6 @@ export function viewTitle(view: ViewState, groupings: Grouping[]): string {
     xPart = '';
   }
   const sPart = view.series ? `, split by ${dimLabel(view.series, groupings)}` : '';
-  const pctPart = view.pct ? ' as % of total' : '';
+  const pctPart = view.pct ? (view.pctDenom === 'lens' ? ' as % of the period total' : ' as % within view') : '';
   return `${measure}${pctPart} ${xPart}${sPart}`.replace(/\s+/g, ' ').trim();
 }
