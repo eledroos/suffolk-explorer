@@ -8,7 +8,7 @@ import MultiSelect from './MultiSelect';
 /** Filter sections, chunked so substantive dimensions outrank provenance.
     Any filterable column not named here lands in the last group. */
 const FILTER_GROUPS: { label: string; cols: string[] }[] = [
-  { label: 'Case', cols: ['crime_type', 'court', 'case_status', 'agency', 'charge_description', 'dtp_class'] },
+  { label: 'Case', cols: ['crime_type', 'court', 'case_status', 'case_disposition_status', 'agency', 'charge_description', 'dtp_class'] },
   { label: 'Outcome', cols: ['disposition_description', 'disposition_reason', 'outcome_detail', 'outcome_class', 'prosecutorial_call'] },
   { label: 'People', cols: ['race', 'sex'] },
   { label: 'DA administration', cols: ['filed_under', 'disposed_under'] },
