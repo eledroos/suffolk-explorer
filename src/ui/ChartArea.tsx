@@ -91,7 +91,11 @@ export default function ChartArea(p: ChartAreaProps) {
           <h2 className="chart-title">{agg ? viewTitle(view, groupings) : 'Loading'}</h2>
           <p className="chart-sub">
             {LENS_INFO[view.lens].label} lens
-            {agg ? ` · ${fmtInt(agg.filteredRowCount)} charge rows in view` : ''}
+            {agg
+              ? view.measure === 'charges'
+                ? ` · ${fmtInt(agg.filteredRowCount)} charge rows in view`
+                : ` · ${fmtInt(agg.total)} distinct ${view.measure === 'cases' ? 'cases' : 'people'} · from ${fmtInt(agg.filteredRowCount)} charge rows in view`
+              : ''}
           </p>
         </div>
       </header>

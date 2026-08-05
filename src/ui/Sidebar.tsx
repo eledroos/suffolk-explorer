@@ -252,6 +252,13 @@ export default function Sidebar({ view, groupings, onPatch, onLens }: SidebarPro
             </select>
           </span>
         </label>
+        <p className="side-footnote" aria-live="polite">
+          {view.measure === 'charges'
+            ? 'Each charge counts once. A case with four charges contributes four.'
+            : view.measure === 'cases'
+              ? 'Each case counts once, however many charges it carries.'
+              : 'Each person counts once, across all of their cases and charges.'}
+        </p>
 
         <label className="field field-row">
           <span className="field-label">% of total</span>

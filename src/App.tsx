@@ -296,8 +296,8 @@ export default function App() {
       : load.status === 'error'
         ? 'Load failed'
         : agg
-          ? `${fmtInt(agg.filteredRowCount)} of ${fmtInt(load.ds.rowCount)} charges`
-          : `${fmtInt(load.ds.rowCount)} charges`;
+          ? `${fmtInt(agg.filteredRowCount)} of ${fmtInt(load.ds.rowCount)} charge rows`
+          : `${fmtInt(load.ds.rowCount)} charge rows`;
 
   return (
     <div className="app">
