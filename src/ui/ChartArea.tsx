@@ -20,6 +20,7 @@ import {
   type ChartType,
   type Grouping,
   type ViewState,
+  ERA_BOUNDARIES,
 } from '../contract';
 import AggTable from './AggTable';
 import { displayValue, fmtAxis, fmtInt, fmtPct, MONO, seriesColors, truncate, viewTitle, isDateCol } from './format';
@@ -310,8 +311,8 @@ function RechartsChart({
   // Coverage bands: severity-tinted rects behind the marks. Pixel edges come
   // from recharts' own x scale so bands stay aligned across chart types
   // (band scale for bars, point scale for line/area). pointer-events: none.
+  const cpPalette = palette;
   const drawBands = (cp: any): JSX.Element | null => {
-    if (!bands.length) return null;
     const axis: any = Object.values(cp?.xAxisMap ?? {})[0];
     const off = cp?.offset;
     if (!axis?.scale || !off) return null;
@@ -389,7 +390,43 @@ function RechartsChart({
         }
       }
     }
-    if (rects.length === 0) return null;
+    // DA-era boundaries as first-class rules (drawn whenever visible)
+    const eraMarks: JSX.Element[] = [];
+    for (const eb of ERA_BOUNDARIES) {
+      const [ey, em] = eb.date.split('-').map(Number);
+      const label =
+        view.granularity === 'year'
+          ? String(ey)
+          : view.granularity === 'quarter'
+            ? `${ey}-Q${Math.floor((em - 1) / 3) + 1}`
+            : `${ey}-${String(em).padStart(2, '0')}`;
+      const idx = xs.indexOf(label);
+      if (idx < 0) continue;
+      const x = leftEdge(idx);
+      eraMarks.push(
+        <g key={eb.label}>
+          <line
+            x1={x}
+            x2={x}
+            y1={off.top}
+            y2={off.top + off.height}
+            stroke={cpPalette.ink3}
+            strokeWidth={1}
+            strokeDasharray="4 3"
+          />
+          <text
+            x={x + 4}
+            y={off.top + 11}
+            fill={cpPalette.ink2}
+            fontSize={10.5}
+            fontFamily="system-ui, sans-serif"
+          >
+            {eb.label} {'\u2192'}
+          </text>
+        </g>,
+      );
+    }
+    if (rects.length === 0 && eraMarks.length === 0) return null;
     return (
       <g pointerEvents="none" aria-hidden>
         {needHatch && (
@@ -406,10 +443,11 @@ function RechartsChart({
           </defs>
         )}
         {rects}
+        {eraMarks}
       </g>
     );
   };
-  const bandsLayer = bands.length > 0 ? <Customized component={drawBands} /> : null;
+  const bandsLayer = <Customized component={drawBands} />;
 
   let plot: JSX.Element;
   switch (chart) {

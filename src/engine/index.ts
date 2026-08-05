@@ -5,6 +5,7 @@
  */
 export { loadDataset, distinctValues } from './load';
 export { aggregate } from './aggregate';
+export { mergeDatasets } from './merge';
 export { noticesFor } from './notices';
 export { bandsFor, bandBuckets, fmtMonth, COVERAGE } from './coverage';
 export type { ActiveBand, BandSeverity } from './coverage';

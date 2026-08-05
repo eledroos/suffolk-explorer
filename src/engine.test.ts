@@ -24,6 +24,7 @@ import {
   aggToCsv,
   bandsFor,
   bandBuckets,
+  mergeDatasets,
 } from './engine';
 
 // file URL -> filesystem path without needing @types/node (repo path has spaces)
@@ -604,5 +605,49 @@ describe('coverage bands (registry)', () => {
     expect(bandBuckets(floor, 'year')).toEqual({ start: '2024', end: '2024', startPartial: true, endPartial: true });
     const odd = { from: '2024-08', to: '2025-02' };
     expect(bandBuckets(odd, 'quarter')).toEqual({ start: '2024-Q3', end: '2025-Q1', startPartial: true, endPartial: true });
+  });
+});
+
+describe('history dataset (2006-2021) merge', () => {
+  it('merges and the yearly seam is continuous, ground-truth exact', async () => {
+    const histPath = decodeURIComponent(
+      new URL('../public/data/history.parquet', import.meta.url).pathname,
+    );
+    const hist = await loadDataset(histPath);
+    expect(hist.rowCount).toBe(1_094_387);
+    const merged = mergeDatasets(ds, hist);
+    expect(merged.rowCount).toBe(200_630 + 1_094_387);
+    const v: ViewState = {
+      ...DEFAULT_VIEW,
+      history: true,
+      granularity: 'year',
+      x: { kind: 'col', col: 'filing_date' },
+    };
+    const agg = aggregate(merged, v, []);
+    const val = (x: string) => agg.rows.find((r) => r.x === x)?.value ?? 0;
+    // internal-extract years (verified against the Aug 3 audit's adult table)
+    expect(val('2016')).toBe(51_173);
+    expect(val('2019')).toBe(46_013);
+    expect(val('2020')).toBe(31_345);
+    // dump year, corroborated by PRR-220211C to 0.3%
+    expect(val('2021')).toBe(37_283);
+    // Hayden era continues seamlessly
+    expect(val('2022')).toBe(37_399);
+    expect(val('2025')).toBe(40_595);
+    const d = aggregate(merged, { ...v, lens: 'dispositions', x: { kind: 'col', col: 'disposition_date' } }, []);
+    const dval = (x: string) => d.rows.find((r) => r.x === x)?.value ?? 0;
+    expect(dval('2020')).toBe(20_470);
+    expect(dval('2021')).toBe(28_209);
+    expect(dval('2022')).toBe(37_091);
+  }, 120_000);
+
+  it('history flag rides the URL; 2021 snapshot band gates on it', () => {
+    const enc = encodeView({ ...DEFAULT_VIEW, history: true });
+    expect(decodeView(enc)?.history).toBe(true);
+    const histView = view({ lens: 'dispositions', history: true });
+    expect(bandsFor(histView, []).map((b) => b.id)).toContain('disp-2021-snapshot');
+    expect(bandsFor(view({ lens: 'dispositions' }), []).map((b) => b.id)).not.toContain('disp-2021-snapshot');
+    // the window-open note yields to history
+    expect(noticesFor(histView, []).some((n) => n.title.includes('Window opens'))).toBe(false);
   });
 });

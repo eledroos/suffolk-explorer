@@ -93,11 +93,12 @@ export interface ViewState {
   filters: Record<string, string[]>; // col -> selected values (empty/absent = all); date cols excluded
   dateFrom: string | null;          // 'YYYY-MM-DD' applied to the lens date field
   dateTo: string | null;
+  history: boolean;                 // include the 2006-2021 history dataset (lazy-loaded)
 }
 
 export const DEFAULT_VIEW: ViewState = {
   lens: 'filings', chart: 'line', x: { kind: 'col', col: 'filing_date' }, series: null,
-  granularity: 'month', measure: 'charges', pct: false, pctDenom: 'view', filters: {}, dateFrom: null, dateTo: null,
+  granularity: 'month', measure: 'charges', pct: false, pctDenom: 'view', filters: {}, dateFrom: null, dateTo: null, history: false,
 };
 
 // ---------- engine API (implemented in src/engine/index.ts) ----------
@@ -162,3 +163,13 @@ export const MAX_SERIES = 8;
 
 export const DATA_URL: string =
   (import.meta as any).env?.VITE_DATA_URL || `${(import.meta as any).env?.BASE_URL || '/'}data/hayden.parquet`;
+
+export const HISTORY_DATA_URL: string =
+  (import.meta as any).env?.VITE_HISTORY_DATA_URL ||
+  `${(import.meta as any).env?.BASE_URL || '/'}data/history.parquet`;
+
+/** DA administration boundaries (first day in office), for era rules. */
+export const ERA_BOUNDARIES: { date: string; label: string }[] = [
+  { date: '2019-01-02', label: 'Rollins' },
+  { date: '2022-01-20', label: 'Hayden' },
+];

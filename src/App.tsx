@@ -11,6 +11,7 @@ import {
   saveGroupings,
   bandsFor,
   fmtMonth,
+  mergeDatasets,
 } from './engine';
 import {
   DATA_URL,
@@ -22,6 +23,7 @@ import {
   type Lens,
   type Notice,
   type ViewState,
+  HISTORY_DATA_URL,
 } from './contract';
 import AboutModal from './ui/AboutModal';
 import CategoryBuilder from './ui/CategoryBuilder';
@@ -212,14 +214,38 @@ export default function App() {
   }, [effectiveGroupings]);
 
   // ---- aggregation + notices ----
+  // ---- 2006-2021 history: lazy-loaded second parquet, merged on demand ----
+  const [histDs, setHistDs] = useState<Dataset | null>(null);
+  const [histLoading, setHistLoading] = useState(false);
+  useEffect(() => {
+    if (!view.history || histDs || histLoading) return;
+    setHistLoading(true);
+    loadDataset(HISTORY_DATA_URL)
+      .then((ds: Dataset) => setHistDs(ds))
+      .catch((e: unknown) => {
+        window.alert(
+          `Loading the 2006-2021 history failed: ${e instanceof Error ? e.message : String(e)}.`,
+        );
+        patch({ history: false });
+      })
+      .finally(() => setHistLoading(false));
+  }, [view.history, histDs, histLoading, patch]);
+
+  const activeDs = useMemo<Dataset | null>(() => {
+    if (load.status !== 'ready') return null;
+    if (view.history && histDs) return mergeDatasets(load.ds, histDs);
+    return load.ds;
+  }, [load, view.history, histDs]);
+
   const { agg, aggError } = useMemo<{ agg: AggResult | null; aggError: string | null }>(() => {
-    if (load.status !== 'ready') return { agg: null, aggError: null };
+    if (!activeDs) return { agg: null, aggError: null };
+    if (view.history && !histDs) return { agg: null, aggError: null }; // still fetching
     try {
-      return { agg: aggregate(load.ds, view, effectiveGroupings), aggError: null };
+      return { agg: aggregate(activeDs, view, effectiveGroupings), aggError: null };
     } catch (e) {
       return { agg: null, aggError: e instanceof Error ? e.message : String(e) };
     }
-  }, [load, view, effectiveGroupings]);
+  }, [activeDs, histDs, view, effectiveGroupings]);
 
   const notices = useMemo<Notice[]>(() => {
     try {
@@ -311,13 +337,13 @@ export default function App() {
     (view.dateFrom || view.dateTo ? 1 : 0);
 
   const lensCounts = useMemo<Record<Lens, number>>(() => {
-    if (load.status !== 'ready') return { filings: 0, dispositions: 0, all: 0 };
-    const ds = load.ds;
+    if (!activeDs) return { filings: 0, dispositions: 0, all: 0 };
+    const ds = activeDs;
     let filed = 0, disp = 0;
     const f = ds.bools.filed_in_window, d = ds.bools.disposed_in_window;
     for (let i = 0; i < ds.rowCount; i++) { if (f[i]) filed++; if (d[i]) disp++; }
     return { filings: filed, dispositions: disp, all: ds.rowCount };
-  }, [load]);
+  }, [activeDs]);
 
   const status =
     load.status === 'loading'
@@ -325,8 +351,8 @@ export default function App() {
       : load.status === 'error'
         ? 'Load failed'
         : agg
-          ? `${fmtInt(agg.filteredRowCount)} of ${fmtInt(load.ds.rowCount)} charge rows`
-          : `${fmtInt(load.ds.rowCount)} charge rows`;
+          ? `${fmtInt(agg.filteredRowCount)} of ${fmtInt(activeDs?.rowCount ?? load.ds.rowCount)} charge rows`
+          : `${fmtInt(activeDs?.rowCount ?? load.ds.rowCount)} charge rows`;
 
   return (
     <div className="app">
@@ -394,7 +420,7 @@ export default function App() {
           </main>
           {filtersOpen && (
             <FilterPanel
-              ds={load.ds}
+              ds={activeDs ?? load.ds}
               view={view}
               groupings={effectiveGroupings}
               onSetFilter={setFilter}
@@ -409,7 +435,7 @@ export default function App() {
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
       {showBuilder && load.status === 'ready' && (
         <CategoryBuilder
-          ds={load.ds}
+          ds={activeDs ?? load.ds}
           userGroupings={userGroupings}
           presets={PRESET_GROUPINGS as Grouping[]}
           onSaveAll={handleSaveGroupings}

@@ -114,7 +114,30 @@ export default function Sidebar({
             </button>
           ))}
         </div>
-        <p className="side-blurb">{lensInfo.blurb}</p>
+        <p className="side-blurb">
+          {view.history
+            ? lensInfo.blurb
+                .replace('Jan 2022 - Dec 2025', 'Jan 2006 - Dec 2025')
+                .replace('Jan 2022 – Dec 2025', 'Jan 2006 - Dec 2025')
+            : lensInfo.blurb}
+        </p>
+        <label className="field field-row history-toggle">
+          <span className="field-label">Include 2006-2021</span>
+          <span className={`switch${view.history ? ' on' : ''}`}>
+            <input
+              type="checkbox"
+              checked={view.history}
+              onChange={(e) => onPatch({ history: e.target.checked })}
+              aria-label="Include the 2006 to 2021 history dataset"
+            />
+            <i />
+          </span>
+        </label>
+        <p className="side-footnote">
+          {view.history
+            ? 'History loaded: filings 2006-2020 from the internal dashboard extract, 2021 from the Jan 2022 DAMION extract. 2021 dispositions are single-source.'
+            : 'Adds 1.09M charges, 2006-2021 (17 MB download). Sources differ from 2022-2025; caveats appear on the charts.'}
+        </p>
       </section>
 
       <section className="side-section">

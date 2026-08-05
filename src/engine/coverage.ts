@@ -107,6 +107,17 @@ export const COVERAGE: CoverageEntry[] = [
     band: { from: '2024-07', to: '2024-09', severity: 'floor' },
   },
   {
+    id: 'disp-2021-snapshot',
+    lenses: ['dispositions'],
+    short: '2021 is single-source',
+    detail:
+      '2021 dispositions come from a single Jan 2022 DAMION snapshot, the only source on hand until SCDAO answers the pending records request; counts are floors and cannot be cross-checked.',
+    level: 'info',
+    banner: true,
+    band: { from: '2021-01', to: '2021-12', severity: 'floor' },
+    when: (view) => view.history === true,
+  },
+  {
     id: 'right-censor',
     lenses: ['filings'],
     short: 'Outcomes are right-censored',
@@ -124,7 +135,8 @@ export const COVERAGE: CoverageEntry[] = [
     level: 'info',
     banner: true,
     band: undefined,
-    when: (view) => rangeTouches(view, '2022-01-01', '2022-01-31'),
+    // With history on, the window opens in 2006, so this note would mislead.
+    when: (view) => !view.history && rangeTouches(view, '2022-01-01', '2022-01-31'),
   },
 ];
 
