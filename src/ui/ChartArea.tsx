@@ -104,6 +104,9 @@ export default function ChartArea(p: ChartAreaProps) {
                 ? ` · ${fmtInt(agg.filteredRowCount)} charge rows in view`
                 : ` · ${fmtInt(agg.total)} distinct ${view.measure === 'cases' ? 'cases' : 'people'} · from ${fmtInt(agg.filteredRowCount)} charge rows in view`
               : ''}
+            {view.measure === 'cases' && view.caseScope === 'all' && view.lens !== 'all'
+              ? ' · only cases where every charge matches'
+              : ''}
             {view.pct && view.pctDenom === 'lens'
               ? ` · % of ALL ${view.lens === 'dispositions' ? 'dispositions' : view.lens === 'filings' ? 'filings' : 'charge rows'} per period, ignoring filters`
               : view.pct

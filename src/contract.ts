@@ -96,11 +96,18 @@ export interface ViewState {
   dateFrom: string | null;          // 'YYYY-MM-DD' applied to the lens date field
   dateTo: string | null;
   history: boolean;                 // include the 2006-2021 history dataset (lazy-loaded)
+  /** Distinct-cases semantics. 'any' (default): a case counts if at least one
+   *  of its rows passes the filters. 'all': a case counts only if EVERY one of
+   *  its rows in the lens window + date range passes. Applies only when
+   *  measure === 'cases' and lens !== 'all' (split rows make per-case row sets
+   *  ambiguous in the Both lens). */
+  caseScope: 'any' | 'all';
 }
 
 export const DEFAULT_VIEW: ViewState = {
   lens: 'filings', chart: 'line', x: { kind: 'col', col: 'filing_date' }, series: null,
   granularity: 'month', measure: 'charges', pct: false, pctDenom: 'view', filters: {}, dateFrom: null, dateTo: null, history: false,
+  caseScope: 'any',
 };
 
 // ---------- engine API (implemented in src/engine/index.ts) ----------

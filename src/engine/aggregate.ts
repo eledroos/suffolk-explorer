@@ -205,11 +205,35 @@ export function aggregate(ds: Dataset, view: ViewState, groupings: Grouping[]): 
   const totalSet = distinct ? new Set<number>() : null;
 
   const n = ds.rowCount;
+
+  // --- caseScope 'all': a case qualifies only if EVERY one of its rows in
+  // the lens window + date range passes the filters. Chart encoding
+  // (requiredDates) deliberately does not affect qualification, and with no
+  // filters active every case qualifies, so the pass is skipped. The Both
+  // lens is excluded: its split rows make per-case row sets ambiguous.
+  let qualifying: Set<number> | null = null;
+  if (view.measure === 'cases' && view.caseScope === 'all' && view.lens !== 'all' && idArr && tests.length > 0) {
+    const totalPer = new Map<number, number>();
+    const matchPer = new Map<number, number>();
+    scopeRows: for (let i = 0; i < n; i++) {
+      if (windowFlag && windowFlag[i] === 0) continue;
+      if (fromDay !== null && (!lensDates || lensDates[i] < fromDay || lensDates[i] === NULL_DATE)) continue;
+      if (toDay !== null && (!lensDates || lensDates[i] > toDay || lensDates[i] === NULL_DATE)) continue;
+      const cid = idArr[i];
+      totalPer.set(cid, (totalPer.get(cid) ?? 0) + 1);
+      for (const test of tests) if (!test(i)) continue scopeRows;
+      matchPer.set(cid, (matchPer.get(cid) ?? 0) + 1);
+    }
+    qualifying = new Set();
+    for (const [cid, tot] of totalPer) if (matchPer.get(cid) === tot) qualifying.add(cid);
+  }
+
   rows: for (let i = 0; i < n; i++) {
     if (windowFlag && windowFlag[i] === 0) continue;
     if (fromDay !== null && (!lensDates || lensDates[i] < fromDay || lensDates[i] === NULL_DATE)) continue;
     if (toDay !== null && (!lensDates || lensDates[i] > toDay || lensDates[i] === NULL_DATE)) continue;
     for (const test of tests) if (!test(i)) continue rows;
+    if (qualifying !== null && !qualifying.has(idArr![i])) continue;
     for (const arr of requiredDates) if (arr[i] === NULL_DATE) continue rows;
 
     filteredRowCount++;

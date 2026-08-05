@@ -318,6 +318,9 @@ export default function App() {
         );
       }
       header.push(`# Filters: ${filterParts.length > 0 ? filterParts.join('; ') : 'none'}`);
+      if (view.measure === 'cases' && view.caseScope === 'all' && view.lens !== 'all') {
+        header.push('# Case scope: only cases where EVERY charge in view passes the filters.');
+      }
       for (const n of notices) {
         header.push(`# ${n.level === 'warn' ? 'Caution' : 'Note'}: ${n.title}. ${n.detail}`);
       }

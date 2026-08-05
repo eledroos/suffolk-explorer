@@ -98,6 +98,7 @@ export function decodeView(hash: string): ViewState | null {
     if (typeof p.pct === 'boolean') view.pct = p.pct;
     if (p.pctDenom === 'view' || p.pctDenom === 'lens') view.pctDenom = p.pctDenom;
     if (typeof p.history === 'boolean') view.history = p.history;
+    if (p.caseScope === 'any' || p.caseScope === 'all') view.caseScope = p.caseScope;
     const filters = sanitizeFilters(p.filters);
     if (filters !== undefined) view.filters = filters;
     if (p.dateFrom === null || (typeof p.dateFrom === 'string' && ISO_DATE.test(p.dateFrom))) {

@@ -675,3 +675,53 @@ describe('history dataset (2006-2021) merge', () => {
     expect(noticesFor(cases, []).some((n) => n.title.includes('seam'))).toBe(false);
   });
 });
+
+describe('caseScope: any vs all (ground truth from duckdb over the CSV)', () => {
+  const yy2023 = () =>
+    view({
+      measure: 'cases' as const,
+      granularity: 'year' as const,
+      filters: { dtp_class: ['YY (decline list)'] },
+      dateFrom: '2023-01-01',
+      dateTo: '2023-12-31',
+    });
+
+  it('filings 2023, dtp=YY: any=7,085 cases; all=3,361 pure-YY cases', () => {
+    const anyAgg = aggregate(ds, yy2023(), []);
+    expect(anyAgg.total).toBe(7_085);
+    expect(anyAgg.filteredRowCount).toBe(9_168);
+    const allAgg = aggregate(ds, { ...yy2023(), caseScope: 'all' }, []);
+    expect(allAgg.total).toBe(3_361);
+    // rows shown shrink to the qualifying cases' rows, all of which match
+    expect(allAgg.filteredRowCount).toBe(4_398);
+  });
+
+  it('dispositions 2023, outcome=Office walk-away: any=8,378; all=7,523', () => {
+    const base = view({
+      lens: 'dispositions' as const,
+      x: { kind: 'col' as const, col: 'disposition_date' },
+      measure: 'cases' as const,
+      granularity: 'year' as const,
+      filters: { outcome_class: ['Office walk-away'] },
+      dateFrom: '2023-01-01',
+      dateTo: '2023-12-31',
+    });
+    expect(aggregate(ds, base, []).total).toBe(8_378);
+    expect(aggregate(ds, { ...base, caseScope: 'all' }, []).total).toBe(7_523);
+  });
+
+  it('scope is inert for charges measure, the Both lens, and empty filters', () => {
+    const charges = { ...yy2023(), measure: 'charges' as const, caseScope: 'all' as const };
+    expect(aggregate(ds, charges, []).total).toBe(aggregate(ds, { ...charges, caseScope: 'any' }, []).total);
+    const both = { ...yy2023(), lens: 'all' as const, caseScope: 'all' as const };
+    expect(aggregate(ds, both, []).total).toBe(aggregate(ds, { ...both, caseScope: 'any' }, []).total);
+    const noFilters = { ...yy2023(), filters: {}, caseScope: 'all' as const };
+    expect(aggregate(ds, noFilters, []).total).toBe(aggregate(ds, { ...noFilters, caseScope: 'any' }, []).total);
+  });
+
+  it('caseScope rides the URL and old links decode to any', () => {
+    const enc = encodeView({ ...DEFAULT_VIEW, measure: 'cases', caseScope: 'all' });
+    expect(decodeView(enc)?.caseScope).toBe('all');
+    expect(decodeView(encodeView(DEFAULT_VIEW))?.caseScope).toBe('any');
+  });
+});

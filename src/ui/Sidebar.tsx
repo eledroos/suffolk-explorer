@@ -291,6 +291,39 @@ export default function Sidebar({
               : 'Each person counts once, across all of their cases and charges.'}
         </p>
 
+        {view.measure === 'cases' && view.lens !== 'all' && (
+          <>
+            <div className="field">
+              <span className="field-label">Case scope</span>
+              <div className="seg seg-vert" role="radiogroup" aria-label="Case scope">
+                {([
+                  { key: 'any', label: 'Any charge matches' },
+                  { key: 'all', label: 'Every charge matches' },
+                ] as const).map((m) => {
+                  const active = (view.caseScope ?? 'any') === m.key;
+                  return (
+                    <button
+                      key={m.key}
+                      className={`seg-opt${active ? ' on' : ''}`}
+                      role="radio"
+                      aria-checked={active}
+                      tabIndex={active ? 0 : -1}
+                      onClick={() => onPatch({ caseScope: m.key })}
+                    >
+                      {m.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <p className="side-footnote" aria-live="polite">
+              {(view.caseScope ?? 'any') === 'any'
+                ? 'A case counts if at least one of its charges passes the filters.'
+                : 'A case counts only if every one of its charges in view passes the filters. With no filters on, this changes nothing.'}
+            </p>
+          </>
+        )}
+
         <div className="field">
           <span className="field-label">Values</span>
           <div className="seg seg-vert" role="radiogroup" aria-label="Value mode">
@@ -324,7 +357,7 @@ export default function Sidebar({
           {!view.pct
             ? 'Raw counts.'
             : view.pctDenom === 'lens'
-              ? `Share of ALL ${view.lens === 'dispositions' ? 'dispositions' : view.lens === 'filings' ? 'filings' : 'charge rows'} in each period. Filters and series choose the numerator; the denominator ignores them. Tables and CSV keep counts.`
+              ? `Share of ALL ${view.lens === 'dispositions' ? 'dispositions' : view.lens === 'filings' ? 'filings' : 'charge rows'} in each period. Filters, series, and case scope choose the numerator; the denominator ignores them. Tables and CSV keep counts.`
               : "With a series, % is each series' share within an x value. Without one, it is the share of the filtered total."}
         </p>
       </section>
