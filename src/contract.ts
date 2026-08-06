@@ -42,6 +42,9 @@ export const COLUMNS: ColumnDef[] = [
   // filterable off per Nasser 2026-08-05: the detail layer confused more than
   // it helped as a filter; it stays groupable for series/x use.
   { name: 'outcome_detail',          label: 'Outcome (detailed)',      kind: 'cat',  filterable: false, groupable: true  },
+  // The YY REVIEW tab's three tiers: the operative decline list, the working
+  // group's agreed-but-never-adopted expansion, and the disagreed set.
+  { name: 'dtp_review',              label: 'Decline-list review status', kind: 'cat', filterable: true, groupable: true },
   { name: 'case_disposition_status', label: 'Case disposition status', kind: 'cat',  filterable: true,  groupable: true  },
   { name: 'filed_in_window',         label: 'Filed in 2022-2025',      kind: 'bool', filterable: false, groupable: false },
   { name: 'disposed_in_window',      label: 'Disposed in 2022-2025',   kind: 'bool', filterable: false, groupable: false },

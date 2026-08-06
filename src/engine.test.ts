@@ -725,3 +725,43 @@ describe('caseScope: any vs all (ground truth from duckdb over the CSV)', () => 
     expect(decodeView(encodeView(DEFAULT_VIEW))?.caseScope).toBe('any');
   });
 });
+
+describe('dtp_review: decline-list review status (ground truth from duckdb)', () => {
+  it('filings lens splits into the four review tiers exactly', () => {
+    const r = aggregate(ds, view({ x: { kind: 'col', col: 'dtp_review' } }), []);
+    expect(valuesByX(r.rows)).toEqual({
+      'Not reviewed': 93_447,
+      'Current list': 36_688,
+      'Proposed, agreed (never adopted)': 28_482,
+      'Proposed, disagreed': 2_517,
+    });
+    expect(r.total).toBe(161_134);
+  });
+
+  it('the expanded-list counterfactual: current + agreed = 65,170 filed charges', () => {
+    const r = aggregate(
+      ds,
+      view({ filters: { dtp_review: ['Current list', 'Proposed, agreed (never adopted)'] } }),
+      [],
+    );
+    expect(r.total).toBe(65_170);
+  });
+
+  it('quantifies the YY-tab vs review-tab delta (Bobby ruling pending)', () => {
+    // dtp_class YY = 39,106; of those, 2,393 are strings the review tab
+    // marks 'Proposed, disagreed' and 25 match nothing in the review tab.
+    const r = aggregate(
+      ds,
+      view({
+        x: { kind: 'col', col: 'dtp_review' },
+        filters: { dtp_class: ['YY (decline list)'] },
+      }),
+      [],
+    );
+    expect(valuesByX(r.rows)).toEqual({
+      'Current list': 36_688,
+      'Proposed, disagreed': 2_393,
+      'Not reviewed': 25,
+    });
+  });
+});

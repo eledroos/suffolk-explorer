@@ -20,7 +20,7 @@ CATS = ["charge_code", "crime_type", "court", "race", "sex", "agency",
         "disposition_code", "disposition_description", "disposition_reason",
         "case_status", "filing_source", "disposition_source",
         "filed_under", "disposed_under", "outcome_class", "prosecutorial_call",
-        "dtp_class", "outcome_detail", "case_disposition_status"]
+        "dtp_class", "dtp_review", "outcome_detail", "case_disposition_status"]
 
 df = pd.read_csv(CSV, dtype={"icr": "string", "charge_code": "string", "agency": "string"})
 for c in DATES:
