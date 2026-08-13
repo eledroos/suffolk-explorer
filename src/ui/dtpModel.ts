@@ -23,10 +23,10 @@ export const DTP_HEADER = {
     'the charge type, not what happened to the individual case.',
   detail: [
     'The categories come from a classification workbook built with this ' +
-      'project\'s collaborators and applied to each charge by its charge ' +
+      'project’s collaborators and applied to each charge by its charge ' +
       'description (whitespace-normalized, with a 75-character fallback for ' +
       'descriptions truncated in the source deliveries).',
-    'The review tiers come from the same workbook\'s review tab, which ' +
+    'The review tiers come from the same workbook’s review tab, which ' +
       'records what a working group proposed to add to the list and what was ' +
       'agreed or rejected. The proposed expansion was never adopted as policy.',
   ],
@@ -45,10 +45,10 @@ export const DTP_CONTENT: Record<DtpColumn, { title: string; cards: DtpCard[] }>
       {
         value: 'YY (decline list)',
         name: 'On the decline list',
-        plain: 'Charge types on the office\'s operative decline-to-prosecute list.',
+        plain: 'Charge types on the office’s operative decline-to-prosecute list.',
         detail: [
           'The operative list is 46 charge descriptions, operationalized from ' +
-            'the 2019 policy memo\'s offense categories. In this data the tag is ' +
+            'the 2019 policy memo’s offense categories. In this data the tag is ' +
             'applied by charge description, so it reflects the charge as ' +
             'recorded, not a case-level decision.',
           'Caveat: 2,393 charges filed 2022–2025 carry this tag on ' +
