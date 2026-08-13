@@ -4,7 +4,7 @@ import { COLUMNS, LENS_INFO, type Dataset, type Grouping, type ViewState } from 
 import DtpFilterModal from './DtpFilterModal';
 import { summaryLabel } from './dtpModel';
 import { colLabel, displayValue, truncate } from './format';
-import { IconClose } from './icons';
+import { IconChevron, IconClose } from './icons';
 import MultiSelect from './MultiSelect';
 
 /** Filter sections, chunked so substantive dimensions outrank provenance.
@@ -189,6 +189,7 @@ export default function FilterPanel({
                   onClick={() => setDtpOpen(true)}
                   aria-haspopup="dialog"
                 >
+                  <IconChevron open={false} />
                   <span className="ms-label">Decline-to-prosecute</span>
                   <span
                     className={`ms-count${
