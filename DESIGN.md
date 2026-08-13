@@ -62,12 +62,29 @@ Deploys to Cloudflare Pages; data optionally served from R2 via `VITE_DATA_URL`.
    palette strictly from `PALETTE`. >8 series folds into "Other" (MAX_SERIES).
 10. **Perf**: single parquet fetch + decode (hyparquet), typed-array columns,
     aggregation < 100ms; show a loading state with row count when ready.
-11. **DTP filter modal**: the Case group's `dtp_class`/`dtp_review`
+11. **DTP filter modal (v2)**: the Case group's `dtp_class`/`dtp_review`
     MultiSelects are replaced by one "Decline-to-prosecute" entry opening a
-    modal (`src/ui/DtpFilterModal.tsx`, logic in `src/ui/dtpModel.ts`) with
-    layered explanations per category, live counts via `aggregate()` minus
-    the DTP filters, staged Apply/Cancel, MultiSelect-identical
-    normalization. Spec: `docs/specs/2026-08-12-dtp-filter-modal-design.md`.
+    three-tab modal (`src/ui/DtpFilterModal.tsx`, logic in `src/ui/dtpModel.ts`).
+    Tab 1: Decline list (dtp_class categories with fact chips, share bars, live
+    counts via `aggregate()` minus DTP filters). Tab 2: Review status (dtp_review
+    categories with the same layout). Tab 3: Browse the lists (searchable table
+    sourced from `public/data/dtp-lists.json` with drill-down filters; CSV and
+    XLSX download via `public/downloads/suffolk-dtp-lists.xlsx`). Staged
+    Apply/Cancel, MultiSelect-identical normalization, two-line sidebar entry.
+    Specs: `docs/specs/2026-08-12-dtp-filter-modal-design.md` (v1) and
+    `docs/specs/2026-08-13-dtp-modal-v2-design.md` (v2).
+
+## Data and tooling
+
+**DTP lists preparation:** `scripts/prepare_dtp_lists.py` generates
+`public/data/dtp-lists.json` (1,300 classification rows) and
+`public/downloads/suffolk-dtp-lists.xlsx` (workbook with About sheet and
+per-class data tabs). Both are sourced from `public/data/hayden.parquet` and
+`public/data/history.parquet` plus the classification workbook. Reconciliation
+gates verify class-tab string counts against parquet totals and fail loudly if
+mismatches occur. Regenerate both assets after any parquet rebuild or workbook
+modification. See `docs/specs/dtp-ground-truth-results.md` for the reconciliation
+logic and per-file counts.
 
 ## Acceptance checks (the checker agent runs these)
 
