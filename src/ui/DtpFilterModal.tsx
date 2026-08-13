@@ -126,7 +126,7 @@ export default function DtpFilterModal({ ds, view, groupings, onSetFilter, onClo
             Clear both
           </button>
           <span className="dtp-actions-spacer" />
-          <button onClick={onClose}>Cancel</button>
+          <button className="btn" onClick={onClose}>Cancel</button>
           <button className="btn btn-primary" onClick={apply}>
             Apply
           </button>
