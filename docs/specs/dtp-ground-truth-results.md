@@ -811,3 +811,62 @@ like a headless-Chromium/native-`<dialog>`-top-layer screenshot compositing
 quirk rather than a real CSS defect, but it was not investigated further
 since `Modal.tsx` and the base `.modal` rule are outside this task's file
 list.
+
+## Fix wave: the v2 adversarial content pass
+
+`.superpowers/sdd/2026-08-13-dtp-modal-v2/pass-content.md` re-derived every v2
+number against the workbook, both parquets and the memo PDF, and disputed none
+of them: "Only the labels are wrong (C1, I1, I2, I3, I4), not the arithmetic."
+What it found is that shortening verified sentences into fact chips dropped the
+nouns that scoped them, and that the XLSX, the copy that leaves the site,
+carried none of the corrections the modal spent Task 7 adding. This fix wave
+changes labels and prose. No value changed, and no claim was added that is not
+already verified in the Task 6 or Task 7 tables above.
+
+### Assets: `scripts/prepare_dtp_lists.py` and its two outputs
+
+The script's `SOURCE_NOTE` and About-sheet text changed; both assets were
+regenerated and committed. `public/data/dtp-lists.json`'s 1,300 rows compare
+equal to the previous generation (`git show HEAD:public/data/dtp-lists.json`,
+parsed and compared row by row); only `source_note` differs. The XLSX's five
+data sheets are unchanged in headers, row counts and freeze panes; only the
+About sheet's text differs. All 16 gates re-ran PASS on the committed state.
+
+| Finding | Ruling | Change | Where the text comes from |
+|---|---|---|---|
+| C2 (attribution) | R2 | About sheet's title line and paragraph 1 stop calling the classification the office's instrument: "a decline-to-prosecute classification worksheet made inside the Suffolk County District Attorney's office", "the worksheet assigns to it" | Reflow of the header detail's already-verified "a worksheet created inside the District Attorney's office in 2020" (Task 7 row 1) |
+| C2 (69 versus 46) | R2 | New bolded About section, "The decline list (YY) sheet is broader than the operative list": the YY tab holds 69 descriptions and the sheet carries all 69; the operative list is the narrower 46, the rows marked `Current list` in the Review tier column; the extras include drug distribution charges the worksheet's own annotations say were not in the memo; the worksheet records no adoption of the expansion | Reflow of the modal's YY card and `DTP_CAVEAT`. 69 = Task 7 row 3, 46 = Task 7 row 6, the annotation claim = Task 7 row 5, the no-adoption claim = Task 7 row 14. The two counts are interpolated from the gated values (`per_tab_added['YY']`, `review_tally['Current list']`), not typed as literals |
+| I9 | R2 | The Conflicts paragraph names no "'Conflicts' rows" the workbook does not label. It gives the recipe instead: "take the rows where Class is 'YY (decline list)' and Review tier is 'Proposed, disagreed'", keeping the 10-descriptions / 2,393-charges statement | Recipe verified by running it against the shipped workbook: `All lists` rows matching both values number 10 and their `Charges filed 2022-2025` sum to 2,393, and the 10 descriptions are the same set the JSON marks `"conflict": true` |
+| I8 (XLSX half) | R2 | New bolded About section, "Where the two count columns come from", naming the 2022-2025 file and the pre-2022 file behind the two columns and stating that each counts every charge filed in that window across the whole file, whatever the explorer is filtered to | The two files are the parquets the script reads (`public/data/hayden.parquet`, `public/data/history.parquet`, both `WHERE filed_in_window`); the reconciliation section above proves each column's per-class sums against those files |
+| I7 | R2 | `source_note` becomes "The data behind this view is derived from a classification worksheet created inside the Suffolk County District Attorney's office in 2020, applied to charge records by charge description. The table and the downloadable spreadsheet are derived; the original worksheet is not distributed." | Same provenance facts as before (Task 7 row 1); the referents change from "this file" and "the XLSX beside it", which have no on-screen target, to the table and the download button the reader can see |
+| M1 (About half) | R11 | One About line defines the Review tier column's three values and states that a blank means the review never covered that description | Reflow of the `Not reviewed` card ("Everything the review never looked at", "absence from review is not a statement about them") and of `load_review()`'s own three-section docstring |
+
+### Gate output on the committed state, verbatim
+
+```
+[PASS] YY tab holds 69 strings -- got 69
+[PASS] review tab: 46 current / 107 agreed / 16 disagreed-after-precedence -- got {'Current list': 46, 'Proposed, agreed (never adopted)': 107, 'Proposed, disagreed': 16}
+[PASS] no 75-char-prefix collisions among workbook class-tab strings (first-wins would apply if any existed) -- collision count = 0
+[PASS] hayden YY (decline list): sum of per-string n_2022_2025 == parquet class total -- sum=39,106 parquet=39,106
+[PASS] hayden NY (presumption against): sum of per-string n_2022_2025 == parquet class total -- sum=30,563 parquet=30,563
+[PASS] hayden NS (case-by-case): sum of per-string n_2022_2025 == parquet class total -- sum=45,088 parquet=45,088
+[PASS] hayden NN (prosecute): sum of per-string n_2022_2025 == parquet class total -- sum=44,501 parquet=44,501
+[PASS] history YY (decline list): sum of per-string n_2006_2021 == parquet class total -- sum=221,881 parquet=221,881
+[PASS] history NY (presumption against): sum of per-string n_2006_2021 == parquet class total -- sum=139,974 parquet=139,974
+[PASS] history NS (case-by-case): sum of per-string n_2006_2021 == parquet class total -- sum=301,878 parquet=301,878
+[PASS] history NN (prosecute): sum of per-string n_2006_2021 == parquet class total -- sum=191,417 parquet=191,417
+[PASS] JSON rows: review-tier tally matches the independent workbook count (every review-tab string found a home among the class-tab strings) -- got {'Current list': 46, 'Proposed, disagreed': 16, 'Proposed, agreed (never adopted)': 107}
+[PASS] conflict rows: JSON string count == hayden cross-tab distinct-string count -- JSON=10 parquet cross-tab=10
+[PASS] conflict rows: charge-level count == 2,393 on record -- got 2,393
+
+all gates passed. 1300 rows.
+wrote .../public/data/dtp-lists.json: 1300 rows, 295,789 bytes
+wrote .../public/downloads/suffolk-dtp-lists.xlsx: 109,475 bytes
+```
+
+XLSX read-back after regeneration: sheet names, per-sheet headers, bold header
+row, `freeze_panes == 'A2'` and row counts (All lists 1,300; Decline list (YY)
+69; Presumption against (NY) 107; Case-by-case (NS) 627; Ordinarily prosecuted
+(NN) 497) all match the assertions recorded in the Task 1 section above. Dash
+sweep over the new About text and `source_note`: no em dash, en dash, figure
+dash, horizontal bar, minus sign or non-breaking hyphen.

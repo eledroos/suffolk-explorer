@@ -44,11 +44,16 @@ OUT_XLSX = os.path.join(HERE, "..", "public", "downloads", "suffolk-dtp-lists.xl
 
 GENERATED = datetime.date.today().isoformat()
 
+# Rendered verbatim as the Browse tab's provenance line (DtpBrowseTab.tsx), so
+# it names what the reader can see on that screen: the table and the download
+# button. The older wording pointed at "this file" and "the XLSX beside it",
+# which have no on-screen referent once the JSON is rendered as a page.
 SOURCE_NOTE = (
-    "Derived from a classification worksheet created inside the Suffolk "
-    "County District Attorney's office in 2020, applied to charge-level "
-    "records by charge description. This file and the XLSX beside it are "
-    "derived; the original worksheet is not distributed."
+    "The data behind this view is derived from a classification worksheet "
+    "created inside the Suffolk County District Attorney's office in 2020, "
+    "applied to charge records by charge description. The table and the "
+    "downloadable spreadsheet are derived; the original worksheet is not "
+    "distributed."
 )
 
 CLASS_ORDER = ['YY (decline list)', 'NY (presumption against)',
@@ -374,7 +379,8 @@ def main():
           f"{os.path.getsize(OUT_JSON):,} bytes")
 
     # ---- Write XLSX
-    write_xlsx(rows, len(conflict_rows), cross_tab_charges)
+    write_xlsx(rows, len(conflict_rows), cross_tab_charges,
+               per_tab_added['YY'], review_tally['Current list'])
     print(f"wrote {OUT_XLSX}: {os.path.getsize(OUT_XLSX):,} bytes")
 
 
@@ -395,34 +401,63 @@ def write_sheet(ws, rows):
                    r['n_2022_2025'], r['n_2006_2021']])
 
 
-def write_xlsx(rows, n_conflict, n_conflict_charges):
+def write_xlsx(rows, n_conflict, n_conflict_charges, n_yy, n_current):
+    """n_yy and n_current are passed in rather than written into the About
+    text as literals: they are the same gated counts the modal's chips carry
+    (YY tab strings, operative list strings), and the gates above hard-fail
+    before this runs if the workbook ever stops producing them."""
     wb = openpyxl.Workbook()
     about = wb.active
     about.title = 'About'
     about_lines = [
-        ("Suffolk County DA decline-to-prosecute classification", True),
+        ("Decline-to-prosecute classification worksheet, made inside the "
+         "Suffolk County District Attorney's office, 2020", True),
         ("", False),
-        ("This workbook lists every charge description in the Suffolk "
-         "County District Attorney's office's decline-to-prosecute "
-         "classification: which of four categories, decline (YY), "
-         "presumption against (NY), case-by-case (NS), or ordinarily "
-         "prosecuted (NN), the office's worksheet assigns to it.", False),
+        ("This workbook lists every charge description in a "
+         "decline-to-prosecute classification worksheet made inside the "
+         "Suffolk County District Attorney's office: which of four "
+         "categories, decline (YY), presumption against (NY), case-by-case "
+         "(NS), or ordinarily prosecuted (NN), the worksheet assigns to "
+         "it.", False),
         ("The classification comes from a worksheet created inside the "
          "Suffolk County District Attorney's office in 2020.", False),
         ("The worksheet's categories are applied to charge-level data by "
          "matching each row's charge description against the worksheet's "
          "own description strings, exact match first, then a 75-character "
          "prefix match for descriptions the source systems truncate.", False),
+        ("The Review tier column carries the three sections of the "
+         "worksheet's 2020 review tab: 'Current list', 'Proposed, agreed "
+         "(never adopted)', and 'Proposed, disagreed'. A blank Review tier "
+         "means the review never covered that description.", False),
         (f"This file is derived from that worksheet. The worksheet itself "
          f"is not distributed. Generated {GENERATED}.", False),
+        ("", False),
+        ("The decline list (YY) sheet is broader than the operative list.",
+         True),
+        (f"The worksheet's YY tab holds {n_yy} charge descriptions, and the "
+         f"'Decline list (YY)' sheet carries all {n_yy}. The operative list "
+         f"is the narrower set of {n_current}, the rows marked 'Current "
+         f"list' in the Review tier column. The extras include drug "
+         f"distribution charges the worksheet's own annotations say were "
+         f"not in the memo. The worksheet records no adoption of the "
+         f"expansion.", False),
+        ("", False),
+        ("Where the two count columns come from.", True),
+        ("Both columns come from the assembled charge-level files behind "
+         "this project's explorer. 'Charges filed 2022-2025' counts charges "
+         "filed 2022 to 2025 in the 2022-2025 file; 'Charges filed "
+         "2006-2021' counts charges filed 2006 to 2021 in the pre-2022 "
+         "file. Each column counts every charge filed in that window across "
+         "the whole file, whatever the explorer is filtered to.", False),
         ("", False),
         ("Conflicts.", True),
         (f"Some charge descriptions are marked class YY (on the decline "
          f"list) while the worksheet's own review tab separately proposed "
          f"changing that description's category and recorded a reviewer's "
-         f"disagreement. The 'Conflicts' rows in the 'All lists' sheet are "
-         f"these charge descriptions: {n_conflict} distinct descriptions, "
-         f"covering {n_conflict_charges:,} charges filed 2022 to 2025.", False),
+         f"disagreement. To find them, take the rows where Class is 'YY "
+         f"(decline list)' and Review tier is 'Proposed, disagreed': "
+         f"{n_conflict} distinct descriptions, covering "
+         f"{n_conflict_charges:,} charges filed 2022 to 2025.", False),
     ]
     for text, bold in about_lines:
         about.append([text])
