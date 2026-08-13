@@ -251,6 +251,26 @@ export function IconTag({ size = 14 }: IconProps) {
   );
 }
 
+export function IconExternal({ size = 11 }: IconProps) {
+  return (
+    <svg {...svgProps(size)}>
+      <path
+        d="M10.2 3 H3.8 A1 1 0 0 0 2.8 4 V12.2 A1 1 0 0 0 3.8 13.2 H12 A1 1 0 0 0 13 12.2 V6.8"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6.3 9.7 L13 3 M6.7 3 H13 V9.3"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function IconInfo({ size = 14 }: IconProps) {
   return (
     <svg {...svgProps(size)}>

@@ -691,3 +691,123 @@ Opened with openpyxl in the same scratch venv:
 - Row counts per data sheet match the per-tab string counts: All lists 1,300; Decline list (YY) 69; Presumption against (NY) 107; Case-by-case (NS) 627; Ordinarily prosecuted (NN) 497 -- **PASS**
 - `public/data/dtp-lists.json`: `generated` and `source_note` present and match the brief's schema; rows sorted class order YY/NY/NS/NN then description A-Z within class -- **PASS** (verified over all 1,300 rows, not sampled)
 - Spot-checked rows: a conflict row (`COCAINE, DISTRIBUTE c94C §32A(c)`, YY, `Proposed, disagreed`, `conflict: true`, 171 charges 2022-2025 / 539 2006-2021), a zero-count row (`SCHOOL, FAIL SEND CHILD TO c76 §2`, NY, 0 / 0), and the largest string per class (YY: `LICENSE SUSPENDED, OP MV WITH c90 §23`, 6,451 charges 2022-2025; NY: `UNLICENSED OPERATION OF MV c90 §10`, 7,353; NS: `A&B ON FAMILY/HOUSEHOLD MEMBER c265 §13M`, 7,393; NN: `A&B WITH DANGEROUS WEAPON c265 §15A(b)`, 4,951) -- **PASS**
+
+## Task 3: tabs, card redesign, links, sidebar (v2)
+
+`src/ui/DtpFilterModal.tsx` was rebuilt around a three-tab structure (Decline
+list / Review status / Browse the lists), the card redesign (share bar, fact
+chips, links row, collapsed detail), and the two links this spec calls for.
+`src/ui/FilterPanel.tsx`'s `dtp-entry` row became the two-line sidebar entry.
+`src/ui/dtpModel.ts` picked up the three ledger carry-items below plus
+`MEMO_URL`.
+
+### Memo URL verification (spec Step 3)
+
+**Search.** `grep -in "rollins.*memo\|policy memo"` over the blog repo's
+`notes.md` and `debate/03-research/evidence/*.md` located
+`debate/03-research/evidence/office-continuity-and-published-data.md`, whose
+"The Rollins Memo, March 25, 2019" section records two working URLs found
+during that essay's fact-check:
+
+- A Wayback Machine capture: `https://web.archive.org/web/20190326183822/http://www.suffolkdistrictattorney.com/wp-content/uploads/2019/03/The-Rachael-Rollins-Policy-Memo.pdf`, retrieved there as HTTP 200, 41,909,954 bytes.
+- The live SCDAO server copy: `https://www.suffolkdistrictattorney.com/s/The-Rachael-Rollins-Policy-Memo.pdf`, HTTP 200 as of 2026-08-08.
+
+That same document records that the live site's navigation entry and landing
+page for the memo ("Rachael Rollins Policy Memo") return 404 today; only the
+PDF asset and the original press release survive on the live server. Per the
+spec's "external archival URL" preference (a Wayback snapshot or an
+equivalently stable host, not a page that could be taken down by the current
+office), the Wayback capture was chosen as the candidate.
+
+**Verification.** Loaded in a real Playwright/Chromium browser on 2026-08-13:
+navigated to the Wayback URL above and confirmed it renders (not a Wayback
+"page not archived" placeholder). The page shows the Wayback toolbar over a
+PDF.js viewer, page 1 of 66, with the thumbnail and rendered first page
+reading "THE RACHAEL ROLLINS POLICY MEMO." Screenshot:
+`.playwright-mcp/dtp-v2-shots/memo-wayback-check.png` (in the blog repo, not
+this repo). Page count (66) is consistent with the fact-check note's "a 65-page
+policy memo" (SCDAO's own press-release description; off-by-one is cover-page
+counting, not a different document).
+
+**Result.** `MEMO_URL` in `src/ui/dtpModel.ts` is set to the Wayback URL
+above. Linked in the modal header on the phrase "published a list"
+(`target="_blank" rel="noopener noreferrer"`, with an external-link glyph).
+`dtpModel.test.ts`'s `MEMO_URL` test was updated from asserting `null` to
+asserting a non-null `https://web.archive.org/...` string.
+
+### Ledger carry-item A: conflict count is 10, not 16
+
+No UI text introduced by Task 3 states a number for the conflicting rows.
+`DTP_CAVEAT.conflictLinkLabel` is "See the conflicting rows" (no count). The
+YY card's caveat paragraph (below) also carries no count. This matches the
+Task 1 finding above ("The '16' in the design spec does not survive
+recomputation; the correct conflict count is 10"): the correction was made by
+omission, not by swapping 16 for 10 in visible copy, since no shipped
+sentence needed a number here.
+
+### Ledger carry-item B: YY card's third paragraph, citation tail replaced
+
+The YY card's (`dtp_class`, "On the decline list") third detail paragraph
+cited "the data README" and "a ruling is pending", both unreachable by a
+deployed-site reader per the design spec's "Links" section. Changed in
+`src/ui/dtpModel.ts`:
+
+```diff
+- 'Caveat: 2,393 charges filed 2022 to 2025 carry this tag on ' +
+-   'descriptions the review tab lists as proposed-but-disagreed. The ' +
+-   'worksheet itself contains that conflict; a ruling is pending.',
++ '2,393 charges filed 2022 to 2025 carry this tag on descriptions ' +
++   'the review tab rejected. That conflict is in the source ' +
++   'classification. The Browse tab flags the conflicting rows.',
+```
+
+The factual content is unchanged (still the 2,393-charge figure verified in
+the Task 6/7 table above, row 20); only the citation tail changed, from a
+document the reader cannot open to a pointer at UI the reader can reach once
+Task 4 ships the Browse tab. This is a UI pointer, not a new factual claim,
+so it required no new source verification.
+
+### Ledger carry-item C: agreed card's plain sentence, digit duplication
+
+The `dtp_review` "Proposed and agreed, never adopted" card's `plain` sentence
+repeated the "76" figure that Task 2 had already moved into a fact chip
+("Charges marked agreed" = 76). Changed in `src/ui/dtpModel.ts`:
+
+```diff
+- plain: 'A 2020 review inside the office marked 76 further charges agreed for declination. The worksheet records no adoption of the expansion.',
++ plain: 'A 2020 review inside the office marked further charges agreed for declination. The worksheet records no adoption of the expansion.',
+```
+
+`dtpModel.test.ts`'s digit-duplication test previously checked only
+`detail.paragraphs` against `detail.facts`. Extended to also fold `card.plain`
+into the prose-numbers set being compared against chip numbers, so a future
+regression in either `plain` or a paragraph is caught. All nine known cards
+(five `dtp_class`, four `dtp_review`) pass with the extended check; no other
+card's `plain` field carries any digit.
+
+**Verification.** `npm run test` (68/68; `dtpModel.test.ts` still at 23 tests,
+two of them changed in place: the `MEMO_URL` test and the digit-duplication
+test) and `npm run build` both pass. Browser pass (2026-08-13, dev server on
+port 5211, Playwright): tab bar click and ArrowRight keyboard nav both move
+focus and selection; staged-count badge ("Decline list · 2") appears live off
+`staged`, before Apply; share bars render proportional widths for each card
+against its section total; fact chips render (69/46 on the YY card, 76/107/32
+on the agreed card) with no digit overlap against the reflowed prose; the
+memo link opens the verified Wayback URL in a new tab; the caveat's "See the
+conflicting rows" link switches to tab 3, the placeholder renders, and
+`console.log` confirms `browseConflicts` is `true` on that transition and
+resets to `false` on any subsequent tab change (verified by manually
+re-entering tab 3 after leaving it); the sidebar's two-line entry was checked
+active and inactive at 1440px and 1000px (drawer). Screenshots under
+`.playwright-mcp/dtp-v2-shots/` in the blog repo.
+
+One observation outside this task's scope: toggling dark theme and then
+screenshotting an open native `<dialog>` (via Playwright) rendered the modal
+body as light-colored in the PNG despite `getComputedStyle` on the `<dialog>`
+element confirming the correct dark `--surface` background and white text
+were applied. The same mismatch reproduces on the pre-existing, unmodified
+"About" modal, so it is not a regression from this task's changes; it looks
+like a headless-Chromium/native-`<dialog>`-top-layer screenshot compositing
+quirk rather than a real CSS defect, but it was not investigated further
+since `Modal.tsx` and the base `.modal` rule are outside this task's file
+list.

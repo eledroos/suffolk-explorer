@@ -34,9 +34,13 @@ export interface DtpCard {
   detail: DtpDetail; // layer 2: structured detail for the expert reader
 }
 
-/** The 2019 memo's stable archival URL. Set by Task 3 after verification;
-    null renders no link. */
-export const MEMO_URL: string | null = null;
+/** The 2019 memo's stable archival URL. Verified by Task 3 (2026-08-13): a
+    Wayback Machine capture of the PDF at its original SCDAO path, loaded in a
+    real browser and confirmed to render the memo (cover page "THE RACHAEL
+    ROLLINS POLICY MEMO", 66 pages). See docs/specs/dtp-ground-truth-results.md
+    for the verification record. */
+export const MEMO_URL: string | null =
+  'https://web.archive.org/web/20190326183822/http://www.suffolkdistrictattorney.com/wp-content/uploads/2019/03/The-Rachael-Rollins-Policy-Memo.pdf';
 
 export const DTP_HEADER: { plain: string; detail: DtpDetail } = {
   plain:
@@ -87,9 +91,9 @@ export const DTP_CONTENT: Record<DtpColumn, { title: string; cards: DtpCard[] }>
             'The memo’s own text limits the policy to the municipal courts and ' +
               'Chelsea District Court; charges filed in Suffolk Superior Court ' +
               'carry the tag by charge type only.',
-            'Caveat: 2,393 charges filed 2022 to 2025 carry this tag on ' +
-              'descriptions the review tab lists as proposed-but-disagreed. The ' +
-              'worksheet itself contains that conflict; a ruling is pending.',
+            '2,393 charges filed 2022 to 2025 carry this tag on descriptions ' +
+              'the review tab rejected. That conflict is in the source ' +
+              'classification. The Browse tab flags the conflicting rows.',
           ],
           facts: [
             { label: 'Charge descriptions', value: '69' },
@@ -183,7 +187,7 @@ export const DTP_CONTENT: Record<DtpColumn, { title: string; cards: DtpCard[] }>
       {
         value: 'Proposed, agreed (never adopted)',
         name: 'Proposed and agreed, never adopted',
-        plain: 'A 2020 review inside the office marked 76 further charges agreed for declination. The worksheet records no adoption of the expansion.',
+        plain: 'A 2020 review inside the office marked further charges agreed for declination. The worksheet records no adoption of the expansion.',
         detail: {
           paragraphs: [
             'The agreed expansion covers statute-variant description strings. ' +

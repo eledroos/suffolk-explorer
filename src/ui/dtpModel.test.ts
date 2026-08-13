@@ -43,17 +43,18 @@ describe('DTP_CONTENT', () => {
           expect(f.value.length).toBeGreaterThan(0);
         }
   });
-  it('no paragraph repeats a number that already appears in one of its own card’s fact chips', () => {
+  it('no paragraph or plain sentence repeats a number that already appears in one of its own card’s fact chips', () => {
     for (const col of DTP_COLUMNS)
       for (const c of DTP_CONTENT[col].cards) {
         const chipNumbers = new Set<string>();
         for (const f of c.detail.facts)
           for (const n of numberTokens(f.value)) chipNumbers.add(n);
-        const paraNumbers = new Set<string>();
+        const proseNumbers = new Set<string>();
+        for (const n of numberTokens(c.plain)) proseNumbers.add(n);
         for (const p of c.detail.paragraphs)
-          for (const n of numberTokens(p)) paraNumbers.add(n);
+          for (const n of numberTokens(p)) proseNumbers.add(n);
         for (const n of chipNumbers)
-          expect(paraNumbers.has(n)).toBe(false);
+          expect(proseNumbers.has(n)).toBe(false);
       }
   });
 });
@@ -75,8 +76,10 @@ describe('DTP_CAVEAT', () => {
 });
 
 describe('MEMO_URL', () => {
-  it('is unset until Task 3 verifies a stable archival copy', () => {
-    expect(MEMO_URL).toBeNull();
+  it('is set to a verified stable archival URL (Task 3)', () => {
+    expect(MEMO_URL).not.toBeNull();
+    expect(MEMO_URL).toMatch(/^https:\/\//);
+    expect(MEMO_URL).toMatch(/web\.archive\.org/);
   });
 });
 
