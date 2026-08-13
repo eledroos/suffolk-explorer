@@ -106,9 +106,13 @@ export const DTP_CONTENT: Record<DtpColumn, { title: string; cards: DtpCard[] }>
             'the charges in the pre-2022 file. Mostly truncated or rare ' +
             'description variants that failed the match even with the ' +
             '75-character fallback.',
-          'The pre-2022 share runs higher because the older deliveries record ' +
-            'many charges in a plainer description format, such as ' +
-            '"TRESPASSING" where the worksheet carries "TRESPASS c. 266 s. 120".',
+          'The pre-2022 file carries 1,079 distinct unmatched descriptions. ' +
+            'Some are plainer spellings the worksheet does not carry, such as ' +
+            '"TRESPASSING" where the worksheet carries "TRESPASS c. 266 s. 120". ' +
+            'Others are charge types the worksheet does carry, written with a ' +
+            'different statute citation, such as the destruction of property ' +
+            'charge this file cites as "c. 266 s. 127" against the worksheet’s ' +
+            '"c266 §127".',
         ],
       },
     ],
@@ -129,13 +133,13 @@ export const DTP_CONTENT: Record<DtpColumn, { title: string; cards: DtpCard[] }>
       {
         value: 'Proposed, agreed (never adopted)',
         name: 'Proposed and agreed, never adopted',
-        plain: 'A 2020 review inside the office marked 76 further charges agreed for declination; the expansion never became policy.',
+        plain: 'A 2020 review inside the office marked 76 further charges agreed for declination. The worksheet records no adoption of the expansion.',
         detail: [
           'The agreed expansion covers 107 statute-variant description ' +
             'strings. 32 of the 107 are civil motor vehicle infractions, ' +
             'about a third of this tier’s charge volume in the 2022 to 2025 ' +
             'file. Filtering on this shows what the expansion would have ' +
-            'covered, not anything the office committed to.',
+            'covered.',
         ],
       },
       {

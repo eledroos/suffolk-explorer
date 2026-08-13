@@ -461,8 +461,8 @@ worksheet's non-review tabs, which Task 6 never opened:
 | 10 | The NY tag covers charges "its author judged should fall under the memo's broader categories" (NY card detail) | `NY` tab, row 1 definition | Read the tab's own definition text | Verbatim: NY means the charge "is either envisioned in one of the broader categories in the DTP in Appendix D of The Rollins Memo, **or should be**" | **PASS.** New claim (pass-2 C2) |
 | 11 | "The worksheet's own review disagrees with the case-by-case designation on rows covering about **three quarters** of these charges" (NS card detail) | `NS` tab reviewer columns + both parquets | Collected NS rows whose only reviewer entry is a bare `N` (the tab's own instruction: "you can also just put an (N) for disagree"), then summed charges whose description maps to those strings via `dtp_of()`'s exact-then-75-char rule | 404 distinct strings across 405 rows. **43,419 of 57,079 Hayden NS charges = 76.1%**; 269,955 of 380,079 pre-2022 NS charges = 71.0% | **PASS.** New claim (pass-2 C3). Pass 2 derived 76.0% / 71.1% independently; both support "about three quarters" |
 | 12 | Not listed is "about **1%** of the charges in the 2022 to 2025 file and about **6%** of the charges in the pre-2022 file" (Not listed card detail) | Both parquets | Share of `dtp_class = 'Not listed'`, all rows in each file | hayden **2,124/200,630 = 1.06%**; history **63,555/1,092,889 = 5.82%** (matches `data/assembled/README.md`'s "Not listed 5.8%") | **PASS.** Replaces Task 6's unscoped "about 1% of charges", which understated by a factor of five with the history toggle on (pass-2 I3) |
-| 13 | The pre-2022 share runs higher because of "a plainer description format, such as 'TRESPASSING' where the worksheet carries 'TRESPASS c. 266 s. 120'" (Not listed card detail) | `history.parquet` + `YY` tab | Ranked the unmatched descriptions by volume and compared them to the worksheet's strings | 1,079 distinct unmatched descriptions. Top rows are exactly this shape: `TRESPASSING` (1,606), `OPERATING UNREGISTERED MOTOR VEHICLE` (1,315), `POSSESSION OF CLASS B, DRUGS` (1,267). `TRESPASS c. 266 s. 120` is on the YY tab and the bare word does not match it | **PASS.** New claim |
-| 14 | **76** further charges marked agreed (Proposed and agreed card) | `YY REVIEW`, section header | Literal header text: "DTP PROPOSED NEW CHARGES AGREED (76 new)" | 76 | **PASS.** Carried from Task 6 row 2. Attribution changed from "a working group agreed" to "a 2020 review inside the office marked" (pass-2 I1) |
+| 13 | "**1,079** distinct unmatched descriptions", some "plainer spellings the worksheet does not carry" and others "charge types the worksheet does carry, written with a different statute citation" (Not listed card detail) | `history.parquet` + all four classification tabs | Counted distinct unmatched descriptions; then re-ran `dtp_of()` over them with one added normalization, rewriting the `c. 266 s. 127` citation style to the worksheet's `c266 §127` style, and measured how many charges that alone recovers | **1,079** distinct unmatched descriptions covering 63,108 charges with a non-empty description. Citation-style normalization alone recovers **16,022 of those charges (25.4%)** across 158 distinct strings. `TRESPASSING` (1,606) is a genuine gap: no bare `TRESPASSING` appears on any tab. `DESTRUCTION OF PROPERTY +$250, MALICIOUS c. 266 s. 127` (3,506, the largest unmatched string) is **not** a gap: the worksheet carries `DESTRUCTION OF PROPERTY +$250, MALICIOUS C266 §127` and classifies it NS | **REVISED.** See the correction note below |
+| 14 | **76** further charges marked agreed, and "the worksheet records no adoption of the expansion" (Proposed and agreed card) | `YY REVIEW`, section header and the tab as a whole | Literal header text: "DTP PROPOSED NEW CHARGES AGREED (76 new)". For the second sentence, the test is what the worksheet contains: no cell, header or annotation anywhere in the tab records adoption | 76. No adoption record exists in the worksheet | **PASS.** Carried from Task 6 row 2. Attribution changed from "a working group agreed" to "a 2020 review inside the office marked" (pass-2 I1). The unsourced negative "the expansion never became policy" was removed from the visible sentence in the follow-up wave and replaced with the checkable statement about what the worksheet records |
 | 15 | **107** statute-variant strings in the agreed tier (Proposed and agreed card) | Same section, row body | Raw row count = distinct normalized strings under the label | 107 | **PASS.** Carried from Task 6 row 3 |
 | 16 | "**32** of the 107 are civil motor vehicle infractions, about **a third** of this tier's charge volume in the 2022 to 2025 file" (Proposed and agreed card) | Same section + `hayden.parquet` | Counted agreed-section rows whose description carries the tab's `*` civil-infraction marker, then summed their charges in the agreed tier | **32 of 107** (speeding, unregistered vehicle, tire tread depth, safety glass, state highway and Tobin Bridge violations). **8,622 of 28,482 filed 2022-2025 = 30.3%** (all rows: 9,800 of 32,498 = 30.2%) | **PASS.** New numbers (pass-2 I7). Matches `notes.md`'s "8,622 of 28,482" exactly. The share is scoped to the named file in the copy because the pre-2022 figure is 26.8%, which "about a third" would overstate |
 | 17 | **16** description strings, "after the operative list takes precedence over the section's **17** raw rows" (Proposed, rejected card) | `YY REVIEW`, "DTP PROPOSED NEW CHARGES DISAGREE (17)" | Mirrored `load_review()`'s `current > agreed > disagreed` precedence | 17 raw rows; `METHAMPHETAMINE, POSSESS TO DISTRIB c94C §32A(c)` is also on the current list and loses to it, leaving **16** reachable | **PASS.** Restates Task 6 row 4's fix and now shows its arithmetic in the copy |
@@ -470,6 +470,42 @@ worksheet's non-review tabs, which Task 6 never opened:
 | 19 | "Classified NN in the worksheet: not cited in the memo, and judged not to belong in the declination policy" (Ordinarily prosecuted card) | `NN` tab, row 1 definition | Read the tab's own definition text | Verbatim: NN means "'No' the charge statute is not cited specifically in the DTP policy in Appendix C of The Rollins Memo, and 'No' the charge should not be considered for declination or diversion" | **PASS.** New claim, replaces "the office ordinarily prosecutes" (pass-2 I5) |
 | 20 | "**2,393** charges filed 2022 to 2025" carry the YY tag on a disagreed description (YY card detail) | `hayden.parquet` | `WHERE filed_in_window AND dtp_class LIKE 'YY%' AND dtp_review='Proposed, disagreed'` | 2,393 | **PASS.** Carried from Task 6 row 5; only the en dash in the year range changed |
 | 21 | "In 2019 the Rollins administration published a list" (header) | `The Rachael Rollins Policy Memo.pdf` | Cover page and dated cover letter | Cover "MARCH 2019"; letter dated March 25, 2019 | **PASS.** Carried from Task 6 row 7; sentence survived the adversarial pass unchanged |
+
+**Correction to row 13, and one deviation from the re-review's specified text.**
+The first Task 7 wave asserted that the pre-2022 share runs higher *because* the
+older deliveries use "a plainer description format". The content re-review
+(NB1) was right that the word "because" fails: ranked by volume, five of the top
+eight unmatched pre-2022 descriptions are fully statute-cited, and `TRESPASSING`
+is fifth rather than first. The first wave verified that claim on a selective
+reading and it is corrected here.
+
+The re-review's replacement sentence was applied for its first two clauses,
+which reproduce exactly (1,079 distinct unmatched descriptions; `TRESPASSING`
+unmatched at 1,606 against the worksheet's `TRESPASS c. 266 s. 120`, with no
+bare `TRESPASSING` on any tab). Its third clause, "Others are charge types the
+worksheet never covered, such as destruction of property over $250", **does not
+survive verification and was not shipped.** The worksheet does carry that charge
+type:
+
+```
+history.parquet, largest unmatched string:
+  DESTRUCTION OF PROPERTY +$250, MALICIOUS c. 266 s. 127   3,506 charges
+worksheet, NS tab:
+  DESTRUCTION OF PROPERTY +$250, MALICIOUS C266 §127       classified NS
+```
+
+The two strings are the same charge type in two statute-citation styles. Both
+are under 75 characters, so the prefix fallback cannot bridge them and the match
+fails on citation format alone. Rewriting only that citation style and re-running
+`dtp_of()` recovers **16,022 of 63,108 unmatched pre-2022 charges (25.4%)**
+across 158 distinct strings, including the 3,506-charge string above, plus
+`KIDNAPPING c. 265 s. 26` (460) and `LEAVE SCENE OF PERSONAL INJURY c. 90 s.
+24(2)(a½)(1)` (353).
+
+The shipped sentence therefore names both causes and uses the verified example
+for the second: charge types the worksheet does carry, written with a different
+statute citation. Shipping the re-review's text verbatim would have replaced one
+unverified causal claim with another, on an example that contradicts itself.
 
 **Style.** Every em dash and en dash was removed from the module, per CLAUDE.md's
 absolute rule (pass-2 M3): the en-dashed year range became `2022 to 2025`, and
