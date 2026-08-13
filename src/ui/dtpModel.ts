@@ -328,7 +328,9 @@ export function countSignature(view: ViewState): string {
   });
 }
 
-const SHORT_CLASS: Record<string, string> = {
+/** Exported for the Browse tab (DtpBrowseTab.tsx), whose class chips reuse
+    this exact naming per the v2 design spec's "Tab 3" section. */
+export const SHORT_CLASS: Record<string, string> = {
   'YY (decline list)': 'On the decline list',
   'NY (presumption against)': 'Presumption against',
   'NS (case-by-case)': 'Case-by-case',

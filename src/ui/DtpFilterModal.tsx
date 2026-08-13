@@ -5,6 +5,7 @@ import {
   DTP_CAVEAT, DTP_COLUMNS, DTP_CONTENT, DTP_HEADER, MEMO_URL, type DtpCard, type DtpColumn,
   applyPayload, buildCountView, cardsFor, countSignature, countsFromAgg, stageFromFilters,
 } from './dtpModel';
+import DtpBrowseTab from './DtpBrowseTab';
 import { IconExternal } from './icons';
 import Modal from './Modal';
 
@@ -55,11 +56,6 @@ export default function DtpFilterModal({ ds, view, groupings, onSetFilter, onClo
   // later manual visit to Browse starts on "All", not stuck pre-filtered.
   useEffect(() => {
     if (tab !== 'browse') setBrowseConflicts(false);
-  }, [tab]);
-
-  useEffect(() => {
-    if (tab === 'browse') console.log('DTP modal: browse tab opened, browseConflicts =', browseConflicts);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
   // Counts: one aggregate per column, same world minus the DTP filters.
@@ -203,6 +199,7 @@ export default function DtpFilterModal({ ds, view, groupings, onSetFilter, onClo
         role="tabpanel"
         id={`dtp-panel-${tabKey}`}
         aria-labelledby={`dtp-tab-${tabKey}`}
+        className="dtp-panel-narrow"
         key={tabKey}
       >
         <h3 className="dtp-section-title">
@@ -255,11 +252,16 @@ export default function DtpFilterModal({ ds, view, groupings, onSetFilter, onClo
         {tab === 'class' && renderSection('class')}
         {tab === 'review' && renderSection('review')}
         {tab === 'browse' && (
-          <div role="tabpanel" id="dtp-panel-browse" aria-labelledby="dtp-tab-browse">
-            <p className="dtp-browse-placeholder">
-              Browse the lists is coming in the next update.
-              {browseConflicts && ' Opened from the conflicting-rows link; it will land pre-filtered to Conflicts.'}
-            </p>
+          <div
+            role="tabpanel"
+            id="dtp-panel-browse"
+            aria-labelledby="dtp-tab-browse"
+            className="dtp-panel-wide"
+          >
+            <DtpBrowseTab
+              conflictsOnly={browseConflicts}
+              onConsumedConflicts={() => setBrowseConflicts(false)}
+            />
           </div>
         )}
 
