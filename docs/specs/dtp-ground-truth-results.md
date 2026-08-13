@@ -376,6 +376,13 @@ data README's "Not listed 2,124 (1.1%)" line exactly.
 
 **Claim → source → verified value:**
 
+> **Superseded in part by Task 7.** The Task 7 fix wave rewrote the copy after
+> the pass-2 content review. Rows 1, 2, 3, 5 and 7 below still describe
+> sentences in the shipped copy. Row 4's fix stands and is restated with more
+> detail in the Task 7 table. Row 6's "about 1%" was scoped to a named file and
+> a second share added, see Task 7 row 12. Every claim the rewrite introduced is
+> verified in the Task 7 table below, not here.
+
 | # | Claim in `dtpModel.ts` | Source | Method | Verified value | Verdict |
 |---|---|---|---|---|---|
 | 1 | "46 charge descriptions" on the current list (appears twice: `dtp_class` YY card and `dtp_review` Current list card) | `SCDAO-DTP-Classification.xlsx`, `YY REVIEW` tab, "DTP CURRENT CHARGES (46)" section | Mirrored `load_review()`: distinct normalized strings labeled `Current list` in the precedence-resolved `exact` dict | 46 | **PASS** — no change |
@@ -404,3 +411,79 @@ data documentation that the UI copy was just fixed to avoid.
 
 `npm run test` (62/62 passing, including the 17 `dtpModel.test.ts` content
 tests) and `npm run build` both pass after the change.
+
+## Content verification (Task 7 rewrite)
+
+The pass-2 adversarial content review
+(`.superpowers/sdd/2026-08-12-dtp-filter-modal/pass2-content.md`) found 3
+Critical, 7 Important and 5 Minor content defects. It did not dispute a Task 6
+number. What it found is that the copy attributed the classification's contents
+to the office as current practice, described the `dtp_class` tag as the
+operative 46-string list when it is built from the worksheet's wider 69-string
+YY tab, and credited a "working group" with acts the review tab does not
+record. The Task 7 rewrite attributes every card to the classification and adds
+the qualifications the sources carry.
+
+**Method.** Same two-source discipline as Task 6, plus the memo PDF and the
+worksheet's non-review tabs, which Task 6 never opened:
+
+- **Worksheet counts (69 / 46 / 32 / 107 / 17 / reviewer columns).**
+  `data/suffolk-package/reference/SCDAO-DTP-Classification.xlsx`, read with
+  openpyxl in a scratch venv (`/tmp/dtp-fix`, `uv pip install duckdb openpyxl`).
+  `load_dtp()` and `load_review()` from `data/assembled/build_pre2022.py` were
+  mirrored line for line, including `norm_ws` + `.upper()` normalization, the
+  `YY, NY, NS, NN` tab order with first-writer-wins, and the
+  `current > agreed > disagreed` precedence.
+- **Data shares (Not listed, NS three quarters, agreed-tier civil MV share,
+  Superior Court YY).** duckdb against **both** `public/data/hayden.parquet`
+  and `public/data/history.parquet`. Task 6 checked only the first; pass-2 I3
+  was the finding that the modal renders over both.
+- **Memo claims (15 offenses, the court scope limit).** `pdftotext` over `The
+  Rachael Rollins Policy Memo.pdf` in
+  `data/suffolk-package/data/wadadam/Suffolk First Production/`, reading
+  Appendix C's own opening page.
+- **Worksheet provenance.** `unzip -p ... docProps/core.xml`, the standing rule
+  in CLAUDE.md.
+
+**Claim → source → verified value:**
+
+| # | Claim in the shipped copy | Source | Method | Verified value | Verdict |
+|---|---|---|---|---|---|
+| 1 | "a worksheet created inside the District Attorney's office in 2020" (header detail) | `SCDAO-DTP-Classification.xlsx`, `docProps/core.xml` | `unzip -p` | `dc:creator` = `Constantino, Bobby (SUF)`, `created` = 2020-08-11, `modified` = 2020-11-24. The `(SUF)` suffix is the SCDAO account convention on this delivery | **PASS.** Copy names no individual, per ruling R3 |
+| 2 | "circulated to four reviewers and carries one reviewer's responses" (header detail) | `YY REVIEW` tab, reviewer columns | Counted filled cells under each initialled column across all three sections | RR 0, **DSP 139**, LR 0, MT 0. Four columns, one respondent | **PASS.** Replaces the unsupported "a working group agreed" (pass-2 I1) |
+| 3 | **69** charge-description strings on the YY tab (YY card detail) | `YY` tab | Mirrored `load_dtp()`: distinct normalized non-header strings the tab contributes | **69** (per-tab: YY 69, NY 107, NS 627, NN 497; 1,300 total) | **PASS.** New number (pass-2 C1) |
+| 4 | The YY tab "is broader than the operative 46-string list" (YY card detail) | `YY` tab vs `YY REVIEW` "DTP CURRENT CHARGES (46)" | Set comparison after normalization | All 46 are a strict subset of the 69; **23 extras** | **PASS.** New claim (pass-2 C1) |
+| 5 | The YY tab "includes drug distribution charges the worksheet's own annotations say were not in the memo" (YY card detail) | `YY` tab, annotation column | Read the annotation on each of the 23 extras | 10 of the 23 are distribution charges annotated `NOT IN MEMO AND WOULD NOT ADD` (cocaine, oxycodone, methamphetamine, drug classes A through E); an 11th reads "PWID in memo and agree, Distribution not in memo and would not add at this time" | **PASS.** Copy asserts no count, only the fact (ruling R1) |
+| 6 | **46** charge descriptions on the operative list (Current list card) | `YY REVIEW`, "DTP CURRENT CHARGES (46)" | Mirrored `load_review()` precedence-resolved `exact` dict | 46 | **PASS.** Carried from Task 6 row 1 |
+| 7 | "The memo lists **15** offenses" (Current list card) | `The Rachael Rollins Policy Memo.pdf`, Appendix C page C-1 | `pdftotext`, read the sentence | Verbatim: "The list of 15 offenses identified for declination and diversion are included in the chart beginning on page C-3" | **PASS.** New number (pass-2 M2) |
+| 8 | "The memo's own text limits the policy to the municipal courts and Chelsea District Court" (YY card detail) | Same PDF, Appendix C page C-1, first line | `pdftotext`, read the sentence | Verbatim: "At this time, this policy relates only to charges that will remain in a Division of the Boston Municipal Court, and Chelsea District Court." | **PASS.** New claim (pass-2 I6) |
+| 9 | "charges filed in Suffolk Superior Court carry the tag by charge type only" (YY card detail) | `public/data/hayden.parquet` | `WHERE dtp_class LIKE 'YY%' AND lower(court) LIKE '%superior%'` | **879** all rows (648 `filed_in_window`). Existence confirmed; the copy prints no number, per ruling R6 | **PASS** |
+| 10 | The NY tag covers charges "its author judged should fall under the memo's broader categories" (NY card detail) | `NY` tab, row 1 definition | Read the tab's own definition text | Verbatim: NY means the charge "is either envisioned in one of the broader categories in the DTP in Appendix D of The Rollins Memo, **or should be**" | **PASS.** New claim (pass-2 C2) |
+| 11 | "The worksheet's own review disagrees with the case-by-case designation on rows covering about **three quarters** of these charges" (NS card detail) | `NS` tab reviewer columns + both parquets | Collected NS rows whose only reviewer entry is a bare `N` (the tab's own instruction: "you can also just put an (N) for disagree"), then summed charges whose description maps to those strings via `dtp_of()`'s exact-then-75-char rule | 404 distinct strings across 405 rows. **43,419 of 57,079 Hayden NS charges = 76.1%**; 269,955 of 380,079 pre-2022 NS charges = 71.0% | **PASS.** New claim (pass-2 C3). Pass 2 derived 76.0% / 71.1% independently; both support "about three quarters" |
+| 12 | Not listed is "about **1%** of the charges in the 2022 to 2025 file and about **6%** of the charges in the pre-2022 file" (Not listed card detail) | Both parquets | Share of `dtp_class = 'Not listed'`, all rows in each file | hayden **2,124/200,630 = 1.06%**; history **63,555/1,092,889 = 5.82%** (matches `data/assembled/README.md`'s "Not listed 5.8%") | **PASS.** Replaces Task 6's unscoped "about 1% of charges", which understated by a factor of five with the history toggle on (pass-2 I3) |
+| 13 | The pre-2022 share runs higher because of "a plainer description format, such as 'TRESPASSING' where the worksheet carries 'TRESPASS c. 266 s. 120'" (Not listed card detail) | `history.parquet` + `YY` tab | Ranked the unmatched descriptions by volume and compared them to the worksheet's strings | 1,079 distinct unmatched descriptions. Top rows are exactly this shape: `TRESPASSING` (1,606), `OPERATING UNREGISTERED MOTOR VEHICLE` (1,315), `POSSESSION OF CLASS B, DRUGS` (1,267). `TRESPASS c. 266 s. 120` is on the YY tab and the bare word does not match it | **PASS.** New claim |
+| 14 | **76** further charges marked agreed (Proposed and agreed card) | `YY REVIEW`, section header | Literal header text: "DTP PROPOSED NEW CHARGES AGREED (76 new)" | 76 | **PASS.** Carried from Task 6 row 2. Attribution changed from "a working group agreed" to "a 2020 review inside the office marked" (pass-2 I1) |
+| 15 | **107** statute-variant strings in the agreed tier (Proposed and agreed card) | Same section, row body | Raw row count = distinct normalized strings under the label | 107 | **PASS.** Carried from Task 6 row 3 |
+| 16 | "**32** of the 107 are civil motor vehicle infractions, about **a third** of this tier's charge volume in the 2022 to 2025 file" (Proposed and agreed card) | Same section + `hayden.parquet` | Counted agreed-section rows whose description carries the tab's `*` civil-infraction marker, then summed their charges in the agreed tier | **32 of 107** (speeding, unregistered vehicle, tire tread depth, safety glass, state highway and Tobin Bridge violations). **8,622 of 28,482 filed 2022-2025 = 30.3%** (all rows: 9,800 of 32,498 = 30.2%) | **PASS.** New numbers (pass-2 I7). Matches `notes.md`'s "8,622 of 28,482" exactly. The share is scoped to the named file in the copy because the pre-2022 figure is 26.8%, which "about a third" would overstate |
+| 17 | **16** description strings, "after the operative list takes precedence over the section's **17** raw rows" (Proposed, rejected card) | `YY REVIEW`, "DTP PROPOSED NEW CHARGES DISAGREE (17)" | Mirrored `load_review()`'s `current > agreed > disagreed` precedence | 17 raw rows; `METHAMPHETAMINE, POSSESS TO DISTRIB c94C §32A(c)` is also on the current list and loses to it, leaving **16** reachable | **PASS.** Restates Task 6 row 4's fix and now shows its arithmetic in the copy |
+| 18 | "**Three** of those rows record a deferral for consultation with the Human Trafficking Unit rather than a no, and **one** row agrees on possession with intent while refusing distribution" (Proposed, rejected card) | Same section, annotation column | Read all 17 rows' annotations | Three read `HTU needs to be consulted` (NIGHTWALKER, COMMON; NIGHTWALKER, COMMON, 3RD OFFENSE; STREETWALKER, COMMON). One reads "PWID in memo and agree, Distribution not in memo and would not add at this time" | **PASS.** New claim (pass-2 I2). Replaces "the working group said no", which was wrong for four of seventeen rows |
+| 19 | "Classified NN in the worksheet: not cited in the memo, and judged not to belong in the declination policy" (Ordinarily prosecuted card) | `NN` tab, row 1 definition | Read the tab's own definition text | Verbatim: NN means "'No' the charge statute is not cited specifically in the DTP policy in Appendix C of The Rollins Memo, and 'No' the charge should not be considered for declination or diversion" | **PASS.** New claim, replaces "the office ordinarily prosecutes" (pass-2 I5) |
+| 20 | "**2,393** charges filed 2022 to 2025" carry the YY tag on a disagreed description (YY card detail) | `hayden.parquet` | `WHERE filed_in_window AND dtp_class LIKE 'YY%' AND dtp_review='Proposed, disagreed'` | 2,393 | **PASS.** Carried from Task 6 row 5; only the en dash in the year range changed |
+| 21 | "In 2019 the Rollins administration published a list" (header) | `The Rachael Rollins Policy Memo.pdf` | Cover page and dated cover letter | Cover "MARCH 2019"; letter dated March 25, 2019 | **PASS.** Carried from Task 6 row 7; sentence survived the adversarial pass unchanged |
+
+**Style.** Every em dash and en dash was removed from the module, per CLAUDE.md's
+absolute rule (pass-2 M3): the en-dashed year range became `2022 to 2025`, and
+the two em dashes in the `Proposed, rejected` and `Not reviewed` cards became
+sentence breaks. `grep` for the full dash range over `src/ui/dtpModel.ts` returns
+nothing.
+
+**Visibility.** `DtpFilterModal.tsx` renders every `detail` array inside a
+collapsed `<details>`, so a screenshot publishes only `DTP_HEADER.plain`, each
+card's `plain` sentence, and `DTP_CAVEAT`. The two corrections that most needed
+to be visible were placed accordingly: every card's `plain` now names the
+classification rather than the office, and `DTP_CAVEAT` gained the YY-tab
+sentence so the 69-versus-46 distinction is not buried.
+
+`npm run test` (62/62, including the 17 `dtpModel.test.ts` content tests, whose
+`plain.length > 20` assertion every rewritten sentence satisfies) and
+`npm run build` both pass after the rewrite.
