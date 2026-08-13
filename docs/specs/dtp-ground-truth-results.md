@@ -523,3 +523,110 @@ sentence so the 69-versus-46 distinction is not buried.
 `npm run test` (62/62, including the 17 `dtpModel.test.ts` content tests, whose
 `plain.length > 20` assertion every rewritten sentence satisfies) and
 `npm run build` both pass after the rewrite.
+
+## dtp-lists reconciliation (v2 Task 1)
+
+`scripts/prepare_dtp_lists.py` builds `public/data/dtp-lists.json` and
+`public/downloads/suffolk-dtp-lists.xlsx`, the browse/download assets for the
+v2 modal's third tab. It mirrors `../assembled/build_pre2022.py`'s `norm_ws`,
+`load_dtp`, and `load_review` (including `current > agreed > disagreed`
+precedence) line for line, reading the same
+`SCDAO-DTP-Classification.xlsx` workbook and the same two parquets
+(`public/data/hayden.parquet`, filed_in_window 2022-2025; `public/data/
+history.parquet`, filed_in_window 2006-2021). Run in a scratch venv
+(`cd /tmp && mkdir -p dtp-v2 && cd dtp-v2 && uv venv && uv pip install duckdb
+openpyxl`).
+
+**Method for per-string counts.** The build's `dtp_of()` only returns a class
+label, not which workbook string matched, so this script extends `load_dtp()`
+to also track each workbook string's original-case display text and its
+first-wins insertion order, then builds a 75-char-prefix index over that
+same order (`build_prefix_map`) so any raw `charge_description` in either
+parquet, matched exact-then-75-char-prefix exactly as the build does, can be
+attributed to exactly one workbook string. Summing those per-string counts by
+class must reproduce the parquet's own `dtp_class` group-by totals; that
+equality is the main reconciliation gate.
+
+### Gate output, verbatim
+
+```
+reading workbook: /Users/nasser/_dev/nasser-blog-posts/2026-08-03 Suffolk DA/data/suffolk-package/reference/SCDAO-DTP-Classification.xlsx
+class-tab strings: {'YY': 69, 'NY': 107, 'NS': 627, 'NN': 497} = 1300 total (first-wins across tabs, so this can be < the sum if any string repeats across tabs)
+[PASS] YY tab holds 69 strings -- got 69
+review-tab exact dict, distinct strings by label (independent of the class tabs): {'Current list': 46, 'Proposed, agreed (never adopted)': 107, 'Proposed, disagreed': 16}
+[PASS] review tab: 46 current / 107 agreed / 16 disagreed-after-precedence -- got {'Current list': 46, 'Proposed, agreed (never adopted)': 107, 'Proposed, disagreed': 16}
+[PASS] no 75-char-prefix collisions among workbook class-tab strings (first-wins would apply if any existed) -- collision count = 0
+hayden: 159,258 charges attributed to a workbook string, 1,876 unmatched (Not listed)
+history: 855,150 charges attributed to a workbook string, 18,957 unmatched (Not listed)
+[PASS] hayden YY (decline list): sum of per-string n_2022_2025 == parquet class total -- sum=39,106 parquet=39,106
+[PASS] hayden NY (presumption against): sum of per-string n_2022_2025 == parquet class total -- sum=30,563 parquet=30,563
+[PASS] hayden NS (case-by-case): sum of per-string n_2022_2025 == parquet class total -- sum=45,088 parquet=45,088
+[PASS] hayden NN (prosecute): sum of per-string n_2022_2025 == parquet class total -- sum=44,501 parquet=44,501
+[PASS] history YY (decline list): sum of per-string n_2006_2021 == parquet class total -- sum=221,881 parquet=221,881
+[PASS] history NY (presumption against): sum of per-string n_2006_2021 == parquet class total -- sum=139,974 parquet=139,974
+[PASS] history NS (case-by-case): sum of per-string n_2006_2021 == parquet class total -- sum=301,878 parquet=301,878
+[PASS] history NN (prosecute): sum of per-string n_2006_2021 == parquet class total -- sum=191,417 parquet=191,417
+[PASS] JSON rows: review-tier tally matches the independent workbook count (every review-tab string found a home among the class-tab strings) -- got {'Current list': 46, 'Proposed, disagreed': 16, 'Proposed, agreed (never adopted)': 107}
+[PASS] conflict rows: JSON string count == hayden cross-tab distinct-string count -- JSON=10 parquet cross-tab=10
+[PASS] conflict rows: charge-level count == 2,393 on record -- got 2,393
+NOTE: the design spec and task brief say conflict rows number 16 (the full disagreed-tier count). The recomputed, internally-consistent value is 10: of the 16 disagreed-tier strings, only 10 are ALSO class YY (the other 6 are NY or NS in the class tabs, since 'disagreed' describes a proposal to change a charge's class, not its current one). This does not fail the gate; the gate checks internal consistency (JSON vs parquet cross-tab), which holds at 10.
+
+all gates passed. 1300 rows.
+wrote .../public/data/dtp-lists.json: 1300 rows, 295,756 bytes
+wrote .../public/downloads/suffolk-dtp-lists.xlsx: 108,992 bytes
+```
+
+### The "16" in the design spec does not survive recomputation; the correct conflict count is 10
+
+`docs/specs/2026-08-13-dtp-modal-v2-design.md` states, of the browse tab's
+Conflicts filter chip, that it "shows the strings tagged YY whose review tier
+is Rejected (**the 16**)." That figure conflates two different counts that
+happen to share a source number:
+
+- The review tab's `Proposed, disagreed` tier has **16** distinct strings
+  after `current > agreed > disagreed` precedence (unconditional on class;
+  already verified in the Task 6 section above).
+- Of those 16, only **10** are *also* tagged class YY in the class tabs. The
+  other 6 are NY (5 strings) or NS (1 string) in the class tabs. This makes
+  sense once named: "disagreed" describes a reviewer's response to a
+  *proposal to change* a charge's class, most often a proposal to move an
+  NY- or NS-classified charge onto the decline list. A description already
+  sitting on the YY tab and *also* carrying a disagreed review response is
+  the exception (10 of 16), not the rule.
+
+Both counts were independently confirmed against `public/data/hayden.parquet`
+directly, not just against the workbook:
+
+```sql
+-- distinct charge_description strings, YY class AND disagreed review, filed 2022-2025
+SELECT count(*) FROM (
+  SELECT DISTINCT charge_description FROM read_parquet('public/data/hayden.parquet')
+  WHERE filed_in_window AND dtp_class LIKE 'YY%' AND dtp_review = 'Proposed, disagreed'
+);
+-- 10
+
+-- charge-level count, same filter
+SELECT count(*) FROM read_parquet('public/data/hayden.parquet')
+WHERE filed_in_window AND dtp_class LIKE 'YY%' AND dtp_review = 'Proposed, disagreed';
+-- 2393 (matches the figure already on record from Task 6/7 above)
+```
+
+The charge-level figure (2,393) is unaffected; it was always a charge count,
+not a string count, and it holds under both readings. Only the *string*
+count changes: **10, not 16.** Task 1's JSON emits 10 rows with
+`"conflict": true`, and the XLSX About sheet states the count as generated
+(10 distinct descriptions, 2,393 charges filed 2022-2025). The design spec's
+"the 16" and the browse-tab Conflicts chip copy planned for Task 3/4 should
+be corrected to 10 before they ship; this was out of scope for Task 1 to fix
+in the spec itself, so it is flagged here for the task that touches that
+copy.
+
+### XLSX read-back assertions
+
+Opened with openpyxl in the same scratch venv:
+
+- `wb.sheetnames == ['About', 'All lists', 'Decline list (YY)', 'Presumption against (NY)', 'Case-by-case (NS)', 'Ordinarily prosecuted (NN)']` -- **PASS**
+- Every data sheet's header row is exactly `['Description', 'Class', 'Review tier', 'Charges filed 2022-2025', 'Charges filed 2006-2021']`, bold, with `freeze_panes == 'A2'` -- **PASS** (all five data sheets)
+- Row counts per data sheet match the per-tab string counts: All lists 1,300; Decline list (YY) 69; Presumption against (NY) 107; Case-by-case (NS) 627; Ordinarily prosecuted (NN) 497 -- **PASS**
+- `public/data/dtp-lists.json`: `generated` and `source_note` present and match the brief's schema; rows sorted class order YY/NY/NS/NN then description A-Z within class -- **PASS** (verified over all 1,300 rows, not sampled)
+- Spot-checked rows: a conflict row (`COCAINE, DISTRIBUTE c94C §32A(c)`, YY, `Proposed, disagreed`, `conflict: true`, 171 charges 2022-2025 / 539 2006-2021), a zero-count row (`SCHOOL, FAIL SEND CHILD TO c76 §2`, NY, 0 / 0), and the largest string per class (YY: `LICENSE SUSPENDED, OP MV WITH c90 §23`, 6,451 charges 2022-2025; NY: `UNLICENSED OPERATION OF MV c90 §10`, 7,353; NS: `A&B ON FAMILY/HOUSEHOLD MEMBER c265 §13M`, 7,393; NN: `A&B WITH DANGEROUS WEAPON c265 §15A(b)`, 4,951) -- **PASS**
