@@ -115,7 +115,7 @@ export const DTP_CONTENT: Record<DtpColumn, { title: string; cards: DtpCard[] }>
         name: 'Proposed, rejected',
         plain: 'Proposed for the expansion; the working group said no.',
         detail: [
-          '17 description strings. Some of these still carry the on-the-list ' +
+          '16 description strings. Some of these still carry the on-the-list ' +
             'tag in the other grouping — that is the documented ' +
             'inconsistency noted above.',
         ],

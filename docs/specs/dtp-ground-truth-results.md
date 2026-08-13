@@ -283,3 +283,124 @@ in the Filters panel on "Central" (main view: "66,376 charge rows in view").
 | 8 | Custom grouping filter (hand-added) | PASS |
 
 8 of 8 scenarios pass. No mismatches found; nothing to report as BLOCKED.
+
+## Content verification (Task 6)
+
+Every factual number and claim in `DTP_CONTENT`, `DTP_HEADER`, and `DTP_CAVEAT`
+(`src/ui/dtpModel.ts`) was re-derived from primary sources, independent of the
+prior scenario-count work above.
+
+**Method.** Two sources, matched to what each claim is actually about:
+
+- **Workbook counts (46 / 76 / 107 / 17).** These describe the classification
+  workbook itself, not the assembled data, so they were checked against the
+  workbook directly:
+  `data/suffolk-package/reference/SCDAO-DTP-Classification.xlsx` (the `DTPWB`
+  constant in `data/assembled/build_pre2022.py`), `YY REVIEW` tab. A scratch
+  script (`uv venv && uv pip install duckdb openpyxl` in
+  `/tmp/dtp-content`) reimplemented `load_review()` line for line, in the
+  same order (section-header detection, `norm_ws` + `.upper()` normalization,
+  the `exact` dict keyed by normalized string with `current > agreed >
+  disagreed` precedence, then the 75-char `prefix` fallback), and printed the
+  distinct-string count that lands under each label. It also printed the raw
+  per-section row counts before dedup, and cross-checked for duplicate
+  strings within and across sections.
+- **Data counts (2,393 / about 1%).** These describe the assembled dataset, so
+  they were checked with duckdb directly against
+  `public/data/hayden.parquet`, the file the running app reads, using the
+  exact query given in the task brief for the first and the equivalent share
+  computation for the second.
+- **"In 2019 the Rollins administration published a list."** Checked against
+  the primary document itself, not a secondary description: `The Rachael
+  Rollins Policy Memo.pdf` in
+  `data/suffolk-package/data/wadadam/Suffolk First Production/`. Its cover
+  page reads "MARCH 2019" and the internal "Message from the DA" is dated
+  "March 25, 2019." `notes.md` and `data/assembled/README.md` were also
+  checked per the task brief; neither carries a memo date beyond Rollins's
+  January 2, 2019 swearing-in, so the PDF itself is the primary source of
+  record for the year.
+
+**Workbook re-derivation, raw output:**
+
+```
+Section headers found: {'Current list': 'DTP CURRENT CHARGES (46)',
+  'Proposed, agreed (never adopted)': 'DTP PROPOSED NEW CHARGES AGREED (76 new)',
+  'Proposed, disagreed': 'DTP PROPOSED NEW CHARGES DISAGREE (17)'}
+Raw row counts per section (before dedup): Current list 46, Proposed agreed 107, Proposed disagreed 17
+Distinct normalized strings per label, after load_review()'s precedence collapse:
+  Current list 46, Proposed, agreed (never adopted) 107, Proposed, disagreed 16
+75-char-prefix fallback: no further collisions (still 46 / 107 / 16)
+
+Overlap check (raw section membership):
+  disagreed strings also in current: {'METHAMPHETAMINE, POSSESS TO DISTRIB C94C §32A(C)'}
+  disagreed strings also in agreed: set()
+  current strings also in agreed: set()
+  no duplicate strings within any single section
+```
+
+One disagreed-section string ("METHAMPHETAMINE, POSSESS TO DISTRIB c94C
+§32A(c)") is byte-for-byte identical, after whitespace normalization, to a
+string already on the current list (row 27 of the `YY REVIEW` tab). Because
+`load_review()`'s precedence is current > agreed > disagreed, that string is
+filed under `Current list` in the `exact` dict, not `Proposed, disagreed`.
+The workbook's own section header still says "(17)" and the raw section
+still lists 17 rows, but the number of distinct description strings that
+`review_of()` can ever actually label `Proposed, disagreed` in production
+data is 16. This is the same fact `dtpModel.ts`'s "Current list" card already
+states in different words ("Where one description also appears in a rejected
+proposal, the operative list wins."); the "Proposed, disagreed" card's count
+just hadn't been adjusted for it.
+
+**Data query output (duckdb against `public/data/hayden.parquet`):**
+
+```sql
+SELECT count(*) FROM read_parquet('public/data/hayden.parquet')
+WHERE filed_in_window AND dtp_class LIKE 'YY%' AND dtp_review='Proposed, disagreed';
+-- 2393
+
+SELECT
+  sum(CASE WHEN dtp_class = 'Not listed' THEN 1 ELSE 0 END) AS not_listed,
+  count(*) AS total
+FROM read_parquet('public/data/hayden.parquet');
+-- 2124 / 200630 = 1.06% (all rows)
+
+SELECT
+  sum(CASE WHEN dtp_class = 'Not listed' THEN 1 ELSE 0 END) AS not_listed,
+  count(*) AS total
+FROM read_parquet('public/data/hayden.parquet') WHERE filed_in_window;
+-- 1876 / 161134 = 1.16% (filed_in_window only)
+```
+
+Both denominators round to "about 1%"; the all-rows figure also matches the
+data README's "Not listed 2,124 (1.1%)" line exactly.
+
+**Claim → source → verified value:**
+
+| # | Claim in `dtpModel.ts` | Source | Method | Verified value | Verdict |
+|---|---|---|---|---|---|
+| 1 | "46 charge descriptions" on the current list (appears twice: `dtp_class` YY card and `dtp_review` Current list card) | `SCDAO-DTP-Classification.xlsx`, `YY REVIEW` tab, "DTP CURRENT CHARGES (46)" section | Mirrored `load_review()`: distinct normalized strings labeled `Current list` in the precedence-resolved `exact` dict | 46 | **PASS** — no change |
+| 2 | "76 charges" in the agreed expansion | Same tab, "DTP PROPOSED NEW CHARGES AGREED (76 new)" section header | Literal header text in the workbook (this is the working group's own base-charge count, not a row count) | 76 | **PASS** — no change |
+| 3 | "107 statute-variant strings" for the agreed expansion | Same section, row body | Raw row count = distinct normalized strings labeled `Proposed, agreed (never adopted)` (no cross-section overlap with current or disagreed) | 107 | **PASS** — no change |
+| 4 | "17" description strings, disagreed | Same tab, "DTP PROPOSED NEW CHARGES DISAGREE (17)" section | Raw section has 17 rows/17 distinct strings, but one ("METHAMPHETAMINE, POSSESS TO DISTRIB c94C §32A(c)") also sits on the current list; `current > agreed > disagreed` precedence reassigns it, so only 16 strings actually carry the `Proposed, disagreed` label | **16** | **FAIL → FIXED.** Changed `17` to `16` in the `Proposed, disagreed` card's detail text (`src/ui/dtpModel.ts`). See README discrepancy note below. |
+| 5 | "2,393 charges filed 2022–2025" carry the YY tag with a review-disagreed description | `public/data/hayden.parquet` | `SELECT count(*) ... WHERE filed_in_window AND dtp_class LIKE 'YY%' AND dtp_review='Proposed, disagreed'` | 2,393 | **PASS** — no change |
+| 6 | "about 1%" Not listed | `public/data/hayden.parquet` | Share of `dtp_class = 'Not listed'`, all rows and filed_in_window-only, both computed | 1.06% (all rows) / 1.16% (filed_in_window) | **PASS** — both round to "about 1%"; no change |
+| 7 | "In 2019 the Rollins administration published a list" | `The Rachael Rollins Policy Memo.pdf`, `data/suffolk-package/data/wadadam/Suffolk First Production/` | Read the PDF's cover page and dated cover letter directly | Cover: "MARCH 2019"; letter dated "March 25, 2019" | **PASS** — 2019 confirmed; no change |
+
+**README discrepancy.** `data/assembled/README.md` (line 60, the `dtp_review`
+column description) states `'Proposed, disagreed' (17)`, carrying the same
+raw-section-count reading that `dtpModel.ts` had. Per the task brief's
+constraints, only `src/ui/dtpModel.ts` and this results file were changed;
+`README.md` was left untouched but this discrepancy should be corrected
+there too in a future session, since it feeds the same wrong number into the
+data documentation that the UI copy was just fixed to avoid.
+
+**Copy change.** One sentence changed in `src/ui/dtpModel.ts`, the
+`Proposed, disagreed` card under `dtp_review`:
+
+```diff
+- '17 description strings. Some of these still carry the on-the-list ' +
++ '16 description strings. Some of these still carry the on-the-list ' +
+```
+
+`npm run test` (62/62 passing, including the 17 `dtpModel.test.ts` content
+tests) and `npm run build` both pass after the change.
