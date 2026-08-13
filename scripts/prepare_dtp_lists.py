@@ -162,6 +162,29 @@ def review_of(desc, exact, prefix):
 # string (never more than one -- a plain dict key can't collide with itself).
 # The gate below reports how many of the ~1,300 workbook strings would have
 # collided on their own 75-char prefix, had two of them shared one.
+#
+# NOT a literal mirror of build_pre2022.py's dtp_of(). dtp_of() does
+# `DTP.get(n) or DTP.get(n[:75])`, a lookup against the SAME full-string-keyed
+# dict for both tries; its fallback can only ever hit a workbook string that
+# is itself <=75 characters (in practice exactly 75, since anything shorter
+# would already have matched on the first try). It can never reach a workbook
+# string LONGER than 75 characters, because a 75-char slice of the
+# description can never equal a 94-char dict key.
+#
+# prefix_map here is deliberately wider: it indexes every workbook key's own
+# first 75 characters, including the 6 workbook strings that exceed 75
+# characters (up to 94), so a truncated parquet description can match those
+# 6 too. Those 6 strings are otherwise unreachable by any lookup, literal or
+# otherwise, since nothing in the parquet is ever going to arrive already
+# longer than they are and equal to them past character 75.
+#
+# This divergence is intentional, not an oversight: the reviewer checked the
+# one live case where it changes an outcome (a "C94C §32E(" truncated
+# description) against hayden.parquet's actual baked-in dtp_class tagging and
+# confirmed the parquet's real tagging follows this wider prefix-index
+# behavior, not the narrower literal dtp_of() reading. So this is the
+# behavior to mirror if the goal is matching what the parquets actually
+# contain, even though it's not the same code path as dtp_of() line for line.
 # ---------------------------------------------------------------------------
 def build_prefix_map(cmap, order):
     prefix_map = {}
@@ -177,10 +200,11 @@ def build_prefix_map(cmap, order):
 
 def match_dtp_key(desc, cmap, prefix_map):
     """Returns the exact workbook key (cmap entry) a raw charge_description
-    is attributed to, or None if it matches no class tab. Same exact-then-
-    75-char-prefix logic as build_pre2022.py's dtp_of(), except this returns
-    WHICH workbook string matched, not just the class label, so per-string
-    counts can partition the class total instead of only summing to it."""
+    is attributed to, or None if it matches no class tab. Exact-then-75-
+    char-prefix logic like build_pre2022.py's dtp_of(), extended to return
+    WHICH workbook string matched (not just the class label) via the wider
+    prefix index built above -- see the comment on build_prefix_map() for
+    exactly how and why this is not a literal mirror of dtp_of()."""
     if not desc:
         return None
     n = norm_ws(desc).upper()
