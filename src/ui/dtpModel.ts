@@ -67,8 +67,8 @@ export const DTP_CAVEAT: { text: string; conflictLinkLabel: string } = {
   text:
     'These two groupings overlap imperfectly: some charges tagged as on the ' +
     'decline list carry descriptions the review tab rejected. The worksheet ' +
-    'itself contains the conflict, and this project’s tagging preserves it. The ' +
-    'decline-list tags above come from the classification’s broader YY tab; the ' +
+    'itself contains the conflict, and the tagging here preserves it. The ' +
+    'decline-list tags come from the classification’s broader YY tab; the ' +
     'operative 46-string list is the narrower set under Review status.',
   conflictLinkLabel: 'See the conflicting rows',
 };
@@ -92,12 +92,13 @@ export const DTP_CONTENT: Record<DtpColumn, { title: string; cards: DtpCard[] }>
               'Chelsea District Court; charges filed in Suffolk Superior Court ' +
               'carry the tag by charge type only.',
             '2,393 charges filed 2022 to 2025 carry this tag on descriptions ' +
-              'the review tab rejected. That conflict is in the source ' +
-              'classification. The Browse tab flags the conflicting rows.',
+              'the review tab put in its disagreed section. That conflict is ' +
+              'in the source classification. The Browse tab flags the ' +
+              'conflicting rows.',
           ],
           facts: [
-            { label: 'Charge descriptions', value: '69' },
-            { label: 'Operative list', value: '46' },
+            { label: 'Worksheet YY strings', value: '69' },
+            { label: 'Operative list strings', value: '46' },
           ],
         },
       },
@@ -158,8 +159,8 @@ export const DTP_CONTENT: Record<DtpColumn, { title: string; cards: DtpCard[] }>
               '"c266 §127".',
           ],
           facts: [
-            { label: 'Share of 2022-2025 charges', value: 'about 1%' },
-            { label: 'Share of 2006-2021 charges', value: 'about 6%' },
+            { label: 'Share of the 2022-2025 file', value: 'about 1%' },
+            { label: 'Share of the pre-2022 file', value: 'about 6%' },
           ],
         },
       },
@@ -180,7 +181,7 @@ export const DTP_CONTENT: Record<DtpColumn, { title: string; cards: DtpCard[] }>
           ],
           facts: [
             { label: 'Memo offenses', value: '15' },
-            { label: 'Operative charge descriptions', value: '46' },
+            { label: 'Operative list strings', value: '46' },
           ],
         },
       },
@@ -196,7 +197,7 @@ export const DTP_CONTENT: Record<DtpColumn, { title: string; cards: DtpCard[] }>
               'on this shows what the expansion would have covered.',
           ],
           facts: [
-            { label: 'Charges marked agreed', value: '76' },
+            { label: 'Charge types marked agreed', value: '76' },
             { label: 'Statute-variant strings', value: '107' },
             { label: 'Civil motor vehicle strings', value: '32' },
           ],
@@ -217,8 +218,8 @@ export const DTP_CONTENT: Record<DtpColumn, { title: string; cards: DtpCard[] }>
               'other grouping. That is the documented inconsistency noted above.',
           ],
           facts: [
-            { label: 'Raw rows', value: '17' },
-            { label: 'Strings after precedence', value: '16' },
+            { label: 'Review rows', value: '17' },
+            { label: 'Distinct strings', value: '16' },
           ],
         },
       },

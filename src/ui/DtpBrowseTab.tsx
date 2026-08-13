@@ -22,6 +22,23 @@ const XLSX_URL = `${BASE_URL}downloads/suffolk-dtp-lists.xlsx`;
 
 const fmt = (n: number) => n.toLocaleString('en-US');
 
+/** Mirrors `SOURCE_NOTE` in scripts/prepare_dtp_lists.py, which the JSON
+    carries as `source_note`. Shown while the JSON is loading or after it
+    fails, so the derived-and-not-distributed disclosure is on screen in every
+    state, not only the ready one. */
+const PROVENANCE_FALLBACK =
+  'The data behind this view is derived from a classification worksheet ' +
+  'created inside the Suffolk County District Attorney’s office in 2020, ' +
+  'applied to charge records by charge description. The table and the ' +
+  'downloadable spreadsheet are derived; the original worksheet is not ' +
+  'distributed.';
+
+/** The two count columns are computed once, over every filed charge in each
+    window, by scripts/prepare_dtp_lists.py. They do not move with the lens,
+    the date range, or any filter the reader has set, while every card on the
+    other two tabs is counted against the current view. */
+const COUNTS_NOTE = 'Counts cover the full datasets and ignore any active filters.';
+
 type LoadState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
@@ -97,9 +114,8 @@ export default function DtpBrowseTab({ conflictsOnly, onConsumedConflicts }: Pro
   return (
     <div className="dtp-browse">
       <p className="dtp-browse-provenance">
-        {state.status === 'ready'
-          ? state.data.source_note
-          : 'A classification worksheet from inside the Suffolk County District Attorney’s office, 2020, applied to charge-level records by charge description.'}
+        {state.status === 'ready' ? state.data.source_note : PROVENANCE_FALLBACK}{' '}
+        {COUNTS_NOTE}
       </p>
 
       <div className="dtp-browse-downloadrow">
@@ -187,8 +203,8 @@ export default function DtpBrowseTab({ conflictsOnly, onConsumedConflicts }: Pro
                       <span
                         className="dtp-conflict-flag"
                         role="img"
-                        aria-label="Conflict: tagged on the decline list, but the review tab's response was Rejected."
-                        title="Tagged on the decline list (YY), but the review tab's response was Rejected. Both tags are shown as recorded in the worksheet."
+                        aria-label="Conflict: on the YY tab and in the review’s disagreed section."
+                        title="On the YY tab and in the review’s disagreed section."
                       >
                         {'⚑'}
                       </span>

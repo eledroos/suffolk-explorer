@@ -539,15 +539,15 @@ sentence and paragraph position; they were only rewrapped into the new
 
 | Task 7 # | Claim | Now lives in |
 |---|---|---|
-| 3 | 69 charge-description strings on the YY tab | Chip "Charge descriptions" = 69, `dtp_class` YY card |
-| 4 | YY tab "is broader than the operative 46-string list" | The relationship ("broader than the operative list shown under Review status"): `dtp_class` YY card, paragraph 1, number removed and the sentence reflowed. The 46 figure itself: chip "Operative list" = 46, same card |
-| 6 | 46 charge descriptions on the operative list | Chip "Operative charge descriptions" = 46, `dtp_review` Current list card |
+| 3 | 69 charge-description strings on the YY tab | Chip "Worksheet YY strings" = 69, `dtp_class` YY card (relabeled from "Charge descriptions" in the fix wave below, ruling R4) |
+| 4 | YY tab "is broader than the operative 46-string list" | The relationship ("broader than the operative list shown under Review status"): `dtp_class` YY card, paragraph 1, number removed and the sentence reflowed. The 46 figure itself: chip "Operative list strings" = 46, same card (relabeled from "Operative list", ruling R5) |
+| 6 | 46 charge descriptions on the operative list | Chip "Operative list strings" = 46, `dtp_review` Current list card (relabeled from "Operative charge descriptions", ruling R5, so both cards name the same quantity the same way) |
 | 7 | "The memo lists 15 offenses" | Chip "Memo offenses" = 15, `dtp_review` Current list card |
-| 12 | Not listed "about 1%" of 2022-2025 charges, "about 6%" of pre-2022 charges | Chips "Share of 2022-2025 charges" = about 1% and "Share of 2006-2021 charges" = about 6%, `dtp_class` Not listed card. Both numbers were the entire content of the sentence that carried them; that sentence's second half, "Mostly truncated or rare description variants that failed the match even with the 75-character fallback," is now the card's paragraph 1 on its own |
-| 14 | 76 further charges agreed; "the worksheet records no adoption of the expansion" | The "worksheet records no adoption" sentence stays in the card's `plain` field; Task 2 left `plain` untouched. The "76 further charges" part dropped the "76" in Task 3 (see Ledger carry-item C, line 778): plain now reads "A 2020 review inside the office marked further charges agreed for declination." The 76 figure is additionally surfaced as chip "Charges marked agreed" = 76, `dtp_review` Proposed-and-agreed card, so a reader who only opens the structured detail still sees it |
+| 12 | Not listed "about 1%" of the 2022-2025 file, "about 6%" of the pre-2022 file | Chips "Share of the 2022-2025 file" = about 1% and "Share of the pre-2022 file" = about 6%, `dtp_class` Not listed card. The Task 2 labels ("Share of 2022-2025 charges", "Share of 2006-2021 charges") restated a file-scoped share as a date-scoped one and were wrong under the new scope; ruling R1 restored the file scope this row's verified values were computed under. See C1 in the fix wave below. Both numbers were the entire content of the sentence that carried them; that sentence's second half, "Mostly truncated or rare description variants that failed the match even with the 75-character fallback," is now the card's paragraph 1 on its own |
+| 14 | 76 further charges agreed; "the worksheet records no adoption of the expansion" | The "worksheet records no adoption" sentence stays in the card's `plain` field; Task 2 left `plain` untouched. The "76 further charges" part dropped the "76" in Task 3 (see Ledger carry-item C, line 778): plain now reads "A 2020 review inside the office marked further charges agreed for declination." The 76 figure is additionally surfaced as chip "Charge types marked agreed" = 76, `dtp_review` Proposed-and-agreed card, so a reader who only opens the structured detail still sees it (relabeled from "Charges marked agreed", ruling R3: 76 is the section header's count of base offenses, and "charges" counts rows everywhere else in this UI) |
 | 15 | 107 statute-variant strings | Chip "Statute-variant strings" = 107, `dtp_review` Proposed-and-agreed card. Paragraph 1 of that card now reads "The agreed expansion covers statute-variant description strings" without the number |
 | 16 | "32 of the 107 are civil motor vehicle infractions, about a third" of 2022-2025 tier volume | Chip "Civil motor vehicle strings" = 32, same card. Paragraph 1 keeps "Some of these are civil motor vehicle infractions, about a third of this tier's charge volume in the 2022 to 2025 file"; "32 of the 107" became "Some of these" since both counts moved to chips |
-| 17 | "16 description strings, after the operative list takes precedence over the section's 17 raw rows" | Chips "Strings after precedence" = 16 and "Raw rows" = 17, `dtp_review` Proposed-disagreed (Rejected) card. Paragraph 1 keeps the precedence relationship, "these description strings are what remains after the operative list takes precedence over the section's raw rows," without either number |
+| 17 | "16 description strings, after the operative list takes precedence over the section's 17 raw rows" | Chips "Distinct strings" = 16 and "Review rows" = 17, `dtp_review` Proposed-disagreed (Rejected) card (relabeled from "Strings after precedence" and "Raw rows", ruling R6: both were `load_review()`'s vocabulary, and chips render above the paragraph that defines them). Paragraph 1 keeps the precedence relationship, "these description strings are what remains after the operative list takes precedence over the section's raw rows," without either number |
 | 20 | 2,393 charges filed 2022-2025 carry the YY tag on a disagreed description | `dtp_class` YY card, paragraph 3. Task 3 rewrote the citation tail (see Ledger carry-item B, lines 755-761): moved from "the worksheet itself contains that conflict; a ruling is pending" to "That conflict is in the source classification. The Browse tab flags the conflicting rows." The 2,393 figure itself is unchanged; the sentence's content and direction shifted from unreachable documentation to UI navigation. Not chipped; the brief's chip list does not include this figure |
 
 **DTP_CAVEAT.** Per the task brief's Step 2, the constant's shape changed to
@@ -870,3 +870,88 @@ row, `freeze_panes == 'A2'` and row counts (All lists 1,300; Decline list (YY)
 (NN) 497) all match the assertions recorded in the Task 1 section above. Dash
 sweep over the new About text and `source_note`: no em dash, en dash, figure
 dash, horizontal bar, minus sign or non-breaking hyphen.
+
+### Modal and Browse tab: `src/ui/dtpModel.ts`, `src/ui/DtpBrowseTab.tsx`
+
+Every chip below keeps the value the Task 6 or Task 7 table verified. Only the
+label changed, and each new label restores the noun that made the number true.
+The relocation table above was updated in place so it names the shipped labels.
+
+| Finding | Ruling | Claim | Label before | Label now |
+|---|---|---|---|---|
+| C1 | R1 | Not listed is about 1% of the 2022-2025 file (Task 7 row 12: 2,124/200,630 = 1.06%, all rows in that file) | Share of 2022-2025 charges | **Share of the 2022-2025 file** |
+| C1 | R1 | Not listed is about 6% of the pre-2022 file (Task 7 row 12: 63,555/1,092,889 = 5.82%, all rows in that file) | Share of 2006-2021 charges | **Share of the pre-2022 file** |
+| I1 | R3 | 76, the `DTP PROPOSED NEW CHARGES AGREED (76 new)` header's own count of base offenses (Task 7 row 14) | Charges marked agreed | **Charge types marked agreed** |
+| I2 | R4 | 69 description strings on the worksheet's YY tab (Task 7 row 3) | Charge descriptions | **Worksheet YY strings** |
+| I3 | R5 | 46 operative-list strings, on both the YY card and the Current list card (Task 7 rows 4 and 6) | Operative list / Operative charge descriptions | **Operative list strings** (both cards) |
+| I4 | R6 | 17 rows in the disagreed section, 16 distinct strings after the current list takes precedence (Task 7 row 17) | Raw rows / Strings after precedence | **Review rows** / **Distinct strings** |
+
+Why C1 needed the file scope back: `filed_in_window` in `history.parquet`
+marks charges filed 2006-2021, and the "about 6%" figure is a share of every
+row in that file, whose filing dates run 1999-01-01 to 2022-01-12. Read as a
+2006-2021 share it is 18,957/874,107 = 2.17%, and the card printing the chip
+shows 2.0% next to it under the history toggle. The verified claim was always
+file-scoped (Task 7 row 12, "all rows in each file"); Task 2's relocation
+turned the file into a date range without re-deriving. The label now says what
+was measured.
+
+Three further copy changes, no number touched:
+
+- **I5 (R7).** `DTP_CAVEAT` renders on both tabs since Task 3 split the
+  sections, so "the decline-list tags above" pointed at nothing on the Review
+  status tab. "above" is gone; the sentence names both tabs' objects
+  explicitly and reads whole on either: "The decline-list tags come from the
+  classification's broader YY tab; the operative 46-string list is the
+  narrower set under Review status."
+- **M2.** The YY card's third paragraph said "descriptions the review tab
+  rejected", true for 9 of the 10 conflict descriptions; the tenth is the row
+  whose annotation reads "PWID in memo and agree, Distribution not in memo and
+  would not add at this time" (Task 7 row 18). It now reads "descriptions the
+  review tab put in its disagreed section", which is true of the section for
+  all 17 rows.
+- **M3.** "this project's tagging preserves it" became "the tagging here
+  preserves it": the modal never names a project.
+
+Browse tab:
+
+- **I6 (R8).** The conflict flag's title and accessible name are now neutral,
+  "On the YY tab and in the review's disagreed section", rather than asserting
+  a rejection the worksheet does not record for every flagged row (three read
+  `HTU needs to be consulted`, one partly agrees; Task 7 row 18). The
+  `Rejected` review chip stays: tier membership is factual, and the tier's own
+  card is named "Proposed, rejected".
+- **I8 (R9).** The provenance line gains one sentence, "Counts cover the full
+  datasets and ignore any active filters." The two count columns are computed
+  once by `scripts/prepare_dtp_lists.py` over each parquet's `filed_in_window`
+  rows and do not move with the lens, the date range or any filter, while
+  every card on the other two tabs is counted against the current view.
+- **M4.** The loading and error states showed a shorter provenance sentence
+  that dropped the derived-and-not-distributed disclosure. Both states now
+  render `PROVENANCE_FALLBACK`, which mirrors the JSON's `source_note`.
+
+### Deferred, with reasons
+
+- **M1, Browse half.** The finding asks for a clause in the provenance line
+  defining a blank review. Ruling R9 fixes that line's addition at one
+  sentence, so the clause was not added there. The About sheet half was
+  applied (see the assets table above), which is where a reader of the
+  downloaded file meets the blank column.
+- **M5.** Rendering a line above the table explaining the flag when the
+  Conflicts chip is active needs new markup and a new style rule, past the
+  one-line scope this wave was given. The flag's meaning is carried by its
+  title and accessible name (I6 above) and by the caveat sentence that
+  deep-links to this view.
+
+### Verification
+
+`npm run test` 84/84 (3 files; no test needed changing, since every chip value
+is unchanged and the digit-duplication test compares values, not labels).
+`npm run build` clean. `scripts/prepare_dtp_lists.py` re-run on the committed
+state: all 16 gates PASS. `dist/data/dtp-lists.json` and
+`dist/downloads/suffolk-dtp-lists.xlsx` are byte-identical (md5) to their
+`public/` sources, so the audited text is the shipped text. Dash sweep over
+`src/ui/dtpModel.ts`, `src/ui/DtpBrowseTab.tsx`, `scripts/prepare_dtp_lists.py`
+and `public/data/dtp-lists.json`: no em dash, en dash, figure dash, horizontal
+bar, minus sign or non-breaking hyphen. `package-lock.json` is byte-identical
+to `3727e67` again (same md5), closing the regression pass's one Minor
+finding: `git diff 3727e67 -- package-lock.json` is empty.
