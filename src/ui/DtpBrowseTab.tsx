@@ -33,11 +33,14 @@ const PROVENANCE_FALLBACK =
   'downloadable spreadsheet are derived; the original worksheet is not ' +
   'distributed.';
 
-/** The two count columns are computed once, over every filed charge in each
-    window, by scripts/prepare_dtp_lists.py. They do not move with the lens,
-    the date range, or any filter the reader has set, while every card on the
-    other two tabs is counted against the current view. */
-const COUNTS_NOTE = 'Counts cover the full datasets and ignore any active filters.';
+/** The two count columns are computed once by scripts/prepare_dtp_lists.py,
+    over each parquet's `filed_in_window` rows: every charge filed 2022-2025 in
+    one file, 2006-2021 in the other, which is narrower than "the whole file".
+    They do not move with the lens, the date range, or any filter the reader
+    has set, while every card on the other two tabs is counted against the
+    current view. */
+const COUNTS_NOTE =
+  'Counts cover each dataset’s filed charges and ignore any active filters.';
 
 type LoadState =
   | { status: 'loading' }

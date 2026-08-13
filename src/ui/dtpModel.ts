@@ -66,8 +66,9 @@ export const DTP_HEADER: { plain: string; detail: DtpDetail } = {
 export const DTP_CAVEAT: { text: string; conflictLinkLabel: string } = {
   text:
     'These two groupings overlap imperfectly: some charges tagged as on the ' +
-    'decline list carry descriptions the review tab rejected. The worksheet ' +
-    'itself contains the conflict, and the tagging here preserves it. The ' +
+    'decline list carry descriptions the review tab marked disagreed. The ' +
+    'worksheet itself contains the conflict, and the tagging here preserves ' +
+    'it. The ' +
     'decline-list tags come from the classification’s broader YY tab; the ' +
     'operative 46-string list is the narrower set under Review status.',
   conflictLinkLabel: 'See the conflicting rows',
@@ -197,7 +198,7 @@ export const DTP_CONTENT: Record<DtpColumn, { title: string; cards: DtpCard[] }>
               'on this shows what the expansion would have covered.',
           ],
           facts: [
-            { label: 'Charge types marked agreed', value: '76' },
+            { label: 'Descriptions marked agreed', value: '76' },
             { label: 'Statute-variant strings', value: '107' },
             { label: 'Civil motor vehicle strings', value: '32' },
           ],
@@ -219,7 +220,7 @@ export const DTP_CONTENT: Record<DtpColumn, { title: string; cards: DtpCard[] }>
           ],
           facts: [
             { label: 'Review rows', value: '17' },
-            { label: 'Distinct strings', value: '16' },
+            { label: 'Strings left after precedence', value: '16' },
           ],
         },
       },
