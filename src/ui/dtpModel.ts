@@ -172,3 +172,75 @@ export function applyPayload(
   }
   return out;
 }
+
+import type { ViewState } from '../contract';
+
+/** ViewState for the modal's live counts: same world minus the DTP filters,
+    aggregated by the target column. */
+export function buildCountView(view: ViewState, col: DtpColumn): ViewState {
+  const filters: Record<string, string[]> = {};
+  for (const [k, v] of Object.entries(view.filters)) {
+    if (k === 'dtp_class' || k === 'dtp_review') continue;
+    filters[k] = v;
+  }
+  return {
+    ...view,
+    x: { kind: 'col', col },
+    series: null,
+    measure: 'charges',
+    pct: false,
+    filters,
+  };
+}
+
+export function countsFromAgg(agg: {
+  rows: { x: string; value: number }[];
+  total: number;
+}): { byValue: Map<string, number>; total: number } {
+  const byValue = new Map<string, number>();
+  for (const r of agg.rows) byValue.set(r.x, (byValue.get(r.x) ?? 0) + r.value);
+  return { byValue, total: agg.total };
+}
+
+/** Changes exactly when the modal's counts could change. */
+export function countSignature(view: ViewState): string {
+  const filters: Record<string, string[]> = {};
+  for (const k of Object.keys(view.filters).sort()) {
+    if (k === 'dtp_class' || k === 'dtp_review') continue;
+    filters[k] = view.filters[k];
+  }
+  return JSON.stringify({
+    lens: view.lens,
+    dateFrom: view.dateFrom,
+    dateTo: view.dateTo,
+    history: view.history,
+    filters,
+  });
+}
+
+const SHORT_CLASS: Record<string, string> = {
+  'YY (decline list)': 'On the decline list',
+  'NY (presumption against)': 'Presumption against',
+  'NS (case-by-case)': 'Case-by-case',
+  'NN (prosecute)': 'Ordinarily prosecuted',
+  'Not listed': 'Not listed',
+};
+
+export function summaryLabel(filters: Record<string, string[]>): string {
+  const cls = filters.dtp_class ?? [];
+  const rev = filters.dtp_review ?? [];
+  if (cls.length === 0 && rev.length === 0) return 'any';
+  const clsPart =
+    cls.length === 0
+      ? 'any category'
+      : cls.length <= 2
+        ? cls.map((v) => SHORT_CLASS[v] ?? v).join(' + ')
+        : `${cls.length} of ${DTP_CONTENT.dtp_class.cards.length} categories`;
+  const revPart =
+    rev.length === 0
+      ? 'any'
+      : rev.length <= 2
+        ? rev.join(' + ')
+        : `${rev.length} of ${DTP_CONTENT.dtp_review.cards.length}`;
+  return `${clsPart} · review: ${revPart}`;
+}
