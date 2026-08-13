@@ -15,11 +15,12 @@ Two adaptations from the brief's template, both noted inline in the script:
   Court filter.
 - **Empty-view scenario.** The template's `court='__nope__'` can't be entered
   through the UI: the Court MultiSelect only lists real dictionary values, so
-  there is no checkbox for a nonexistent court. A search for a real
-  (court, X) pair that returns zero rows under `filed_in_window` came up
-  empty for every other filterable column tried (crime_type, sex, race,
-  agency, outcome_class all have at least one row at every court). Substituted
-  a date range provably disjoint from the lens window instead:
+  there is no checkbox for a nonexistent court. Rather than hunt for a
+  UI-reachable combination that happens to intersect to zero (courts and
+  charge attributes are unevenly distributed, so some pair like
+  `court='East Boston Court' AND sex='B'` would work but isn't obviously the
+  "same kind of test" as a single filter matching nothing), a disjoint date
+  range was chosen as the simplest deterministic empty view:
   `filed_in_window` is true only for `filing_date` in `2022-01-03..2025-12-31`
   (confirmed via `SELECT min(filing_date), max(filing_date) FROM hayden.parquet
   WHERE filed_in_window`), so a `2020-01-01..2020-12-31` date range guarantees
@@ -57,6 +58,12 @@ Save → filter the "Court family" MultiSelect on "Central".
   Not listed                               1,349
   YY (decline list)                       36,267
   TOTAL                                  153,920
+=== dispositions lens, review column ===
+  Current list                            33,999
+  Not reviewed                            90,870
+  Proposed, agreed (never adopted)        26,694
+  Proposed, disagreed                      2,357
+  TOTAL                                  153,920
 === filings + court=Boston Municipal Court ===
   NN (prosecute)                           6,740
   NS (case-by-case)                        9,642
@@ -64,12 +71,24 @@ Save → filter the "Court family" MultiSelect on "Central".
   Not listed                                 170
   YY (decline list)                       13,075
   TOTAL                                   35,635
+=== filings + court=Boston Municipal Court, review column ===
+  Current list                            12,221
+  Not reviewed                            18,493
+  Proposed, agreed (never adopted)         4,060
+  Proposed, disagreed                        861
+  TOTAL                                   35,635
 === filings + date range 2024-01-01..2024-12-31 ===
   NN (prosecute)                          11,699
   NS (case-by-case)                       12,045
   NY (presumption against)                 9,024
   Not listed                                 458
   YY (decline list)                       10,654
+  TOTAL                                   43,880
+=== filings + date range 2024-01-01..2024-12-31, review column ===
+  Current list                             9,974
+  Not reviewed                            25,049
+  Proposed, agreed (never adopted)         8,142
+  Proposed, disagreed                        715
   TOTAL                                   43,880
 === filings + dtp_class filter active (counts must IGNORE it) ===
   NN (prosecute)                          44,501
