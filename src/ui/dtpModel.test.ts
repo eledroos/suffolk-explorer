@@ -158,6 +158,6 @@ describe('summaryLabel', () => {
         dtp_class: ['YY (decline list)', 'NY (presumption against)', 'Not listed'],
         dtp_review: ['Current list'],
       }),
-    ).toBe('3 of 5 categories · review: Current list');
+    ).toBe('3 categories · review: Current list');
   });
 });

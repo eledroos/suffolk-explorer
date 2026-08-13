@@ -235,12 +235,12 @@ export function summaryLabel(filters: Record<string, string[]>): string {
       ? 'any category'
       : cls.length <= 2
         ? cls.map((v) => SHORT_CLASS[v] ?? v).join(' + ')
-        : `${cls.length} of ${DTP_CONTENT.dtp_class.cards.length} categories`;
+        : `${cls.length} categories`;
   const revPart =
     rev.length === 0
       ? 'any'
       : rev.length <= 2
         ? rev.join(' + ')
-        : `${rev.length} of ${DTP_CONTENT.dtp_review.cards.length}`;
+        : `${rev.length} selected`;
   return `${clsPart} · review: ${revPart}`;
 }
