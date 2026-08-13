@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { distinctValues } from '../engine';
 import { COLUMNS, LENS_INFO, type Dataset, type Grouping, type ViewState } from '../contract';
+import DtpFilterModal from './DtpFilterModal';
+import { summaryLabel } from './dtpModel';
 import { colLabel, displayValue, truncate } from './format';
 import { IconClose } from './icons';
 import MultiSelect from './MultiSelect';
@@ -8,7 +10,7 @@ import MultiSelect from './MultiSelect';
 /** Filter sections, chunked so substantive dimensions outrank provenance.
     Any filterable column not named here lands in the last group. */
 const FILTER_GROUPS: { label: string; cols: string[] }[] = [
-  { label: 'Case', cols: ['crime_type', 'court', 'case_status', 'case_disposition_status', 'agency', 'charge_description', 'dtp_class', 'dtp_review'] },
+  { label: 'Case', cols: ['crime_type', 'court', 'case_status', 'case_disposition_status', 'agency', 'charge_description'] },
   { label: 'Outcome', cols: ['disposition_description', 'disposition_reason', 'outcome_class', 'prosecutorial_call'] },
   { label: 'People', cols: ['race', 'sex'] },
   { label: 'DA administration', cols: ['filed_under', 'disposed_under'] },
@@ -36,8 +38,13 @@ export default function FilterPanel({
   onClearAll,
   onClose,
 }: FilterPanelProps) {
-  const filterCols = COLUMNS.filter((c) => c.filterable && c.kind === 'cat');
+  // dtp_class/dtp_review are filterable columns but are surfaced through the
+  // dedicated Decline-to-prosecute modal entry below, not a generic MultiSelect.
+  const filterCols = COLUMNS.filter(
+    (c) => c.filterable && c.kind === 'cat' && c.name !== 'dtp_class' && c.name !== 'dtp_review',
+  );
   const dateLabel = colLabel(LENS_INFO[view.lens].dateField);
+  const [dtpOpen, setDtpOpen] = useState(false);
 
   // Columns grouped for scanability; anything unlisted falls into a trailing group.
   const named = new Set(FILTER_GROUPS.flatMap((g) => g.cols));
@@ -175,6 +182,26 @@ export default function FilterPanel({
                 onChange={(vals) => onSetFilter(c.name, vals)}
               />
             ))}
+            {g.label === 'Case' && (
+              <div className="ms dtp-entry">
+                <button
+                  className="ms-head"
+                  onClick={() => setDtpOpen(true)}
+                  aria-haspopup="dialog"
+                >
+                  <span className="ms-label">Decline-to-prosecute</span>
+                  <span
+                    className={`ms-count${
+                      (view.filters.dtp_class?.length ?? 0) + (view.filters.dtp_review?.length ?? 0) > 0
+                        ? ' filtered'
+                        : ''
+                    }`}
+                  >
+                    {truncate(summaryLabel(view.filters), 28)}
+                  </span>
+                </button>
+              </div>
+            )}
           </section>
         ))}
 
@@ -194,6 +221,15 @@ export default function FilterPanel({
         )}
       </div>
       </aside>
+      {dtpOpen && (
+        <DtpFilterModal
+          ds={ds}
+          view={view}
+          groupings={groupings}
+          onSetFilter={onSetFilter}
+          onClose={() => setDtpOpen(false)}
+        />
+      )}
     </>
   );
 }
