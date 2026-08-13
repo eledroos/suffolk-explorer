@@ -62,6 +62,12 @@ Deploys to Cloudflare Pages; data optionally served from R2 via `VITE_DATA_URL`.
    palette strictly from `PALETTE`. >8 series folds into "Other" (MAX_SERIES).
 10. **Perf**: single parquet fetch + decode (hyparquet), typed-array columns,
     aggregation < 100ms; show a loading state with row count when ready.
+11. **DTP filter modal**: the Case group's `dtp_class`/`dtp_review`
+    MultiSelects are replaced by one "Decline-to-prosecute" entry opening a
+    modal (`src/ui/DtpFilterModal.tsx`, logic in `src/ui/dtpModel.ts`) with
+    layered explanations per category, live counts via `aggregate()` minus
+    the DTP filters, staged Apply/Cancel, MultiSelect-identical
+    normalization. Spec: `docs/specs/2026-08-12-dtp-filter-modal-design.md`.
 
 ## Acceptance checks (the checker agent runs these)
 

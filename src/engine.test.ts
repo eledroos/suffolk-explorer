@@ -513,10 +513,13 @@ describe('pctDenom lens: percent-of-period baselines (adversarial ground truth f
     };
     const agg = aggregate(ds, view, []);
     const val = (x: string) => agg.rows.find((r) => r.x === x)?.value ?? 0;
-    expect(val('2022')).toBe(3_728);
-    expect(val('2023')).toBe(3_974);
-    expect(val('2024')).toBe(4_123);
-    expect(val('2025')).toBe(3_946);
+    // re-baselined 2026-08-12 after the 2026-08-08 classification fix (see ../assembled/README.md):
+    // "Dismissed / Dismissed WO Prosecution (call)" and "Plea / Delinquent - Fine (call)" moved from
+    // Uncertain to Conclusively prosecutorial in the Hayden file, so more YY dispositions now qualify.
+    expect(val('2022')).toBe(3_854);
+    expect(val('2023')).toBe(4_091);
+    expect(val('2024')).toBe(4_334);
+    expect(val('2025')).toBe(4_398);
     expect(agg.xBaseline!['2022']).toBe(37_091);
     expect(agg.xBaseline!['2023']).toBe(38_536);
     expect(agg.xBaseline!['2024']).toBe(41_146);
@@ -696,7 +699,7 @@ describe('caseScope: any vs all (ground truth from duckdb over the CSV)', () => 
     expect(allAgg.filteredRowCount).toBe(4_398);
   });
 
-  it('dispositions 2023, outcome=Office walk-away: any=8,378; all=7,523', () => {
+  it('dispositions 2023, outcome=Office walk-away: any=8,377; all=7,522', () => {
     const base = view({
       lens: 'dispositions' as const,
       x: { kind: 'col' as const, col: 'disposition_date' },
@@ -706,8 +709,12 @@ describe('caseScope: any vs all (ground truth from duckdb over the CSV)', () => 
       dateFrom: '2023-01-01',
       dateTo: '2023-12-31',
     });
-    expect(aggregate(ds, base, []).total).toBe(8_378);
-    expect(aggregate(ds, { ...base, caseScope: 'all' }, []).total).toBe(7_523);
+    // re-baselined 2026-08-12 after the 2026-08-08 classification fix (see ../assembled/README.md):
+    // case 596471 (2 charge rows, disposed 2023-05-30) moved Office walk-away -> Administrative
+    // ("Dismissed / Remanded to District Court" / "Dismissed Transfer to BJC"), dropping it from
+    // both the any-set and the all-set.
+    expect(aggregate(ds, base, []).total).toBe(8_377);
+    expect(aggregate(ds, { ...base, caseScope: 'all' }, []).total).toBe(7_522);
   });
 
   it('scope is inert for charges measure, the Both lens, and empty filters', () => {
