@@ -68,7 +68,7 @@ export default function DtpFilterModal({ ds, view, groupings, onSetFilter, onClo
         <p className="dtp-lede">{DTP_HEADER.plain}</p>
         <details className="dtp-more">
           <summary>More about where these categories come from</summary>
-          {DTP_HEADER.detail.map((p, i) => (
+          {DTP_HEADER.detail.paragraphs.map((p, i) => (
             <p key={i}>{p}</p>
           ))}
         </details>
@@ -99,10 +99,10 @@ export default function DtpFilterModal({ ds, view, groupings, onSetFilter, onClo
                     </span>
                   </label>
                   {card.plain && <p className="dtp-card-plain">{card.plain}</p>}
-                  {card.detail.length > 0 && (
+                  {card.detail.paragraphs.length > 0 && (
                     <details className="dtp-more">
                       <summary>More</summary>
-                      {card.detail.map((p, i) => (
+                      {card.detail.paragraphs.map((p, i) => (
                         <p key={i}>{p}</p>
                       ))}
                     </details>
@@ -110,7 +110,7 @@ export default function DtpFilterModal({ ds, view, groupings, onSetFilter, onClo
                 </li>
               ))}
             </ul>
-            {idx === 0 && <p className="dtp-caveat">{DTP_CAVEAT}</p>}
+            {idx === 0 && <p className="dtp-caveat">{DTP_CAVEAT.text}</p>}
           </section>
         ))}
 

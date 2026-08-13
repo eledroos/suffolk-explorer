@@ -10,38 +10,64 @@
 export const DTP_COLUMNS = ['dtp_class', 'dtp_review'] as const;
 export type DtpColumn = (typeof DTP_COLUMNS)[number];
 
+export interface DtpFact {
+  label: string;
+  value: string;
+}
+
+export interface DtpLink {
+  label: string;
+  href: string;
+  external: boolean;
+}
+
+export interface DtpDetail {
+  paragraphs: string[]; // layer 2 prose, for the expert reader
+  facts: DtpFact[];     // load-bearing numbers, rendered as fact chips
+  links?: DtpLink[];
+}
+
 export interface DtpCard {
   value: string;    // exact data value, used as the filter payload
   name: string;     // display name
   plain: string;    // layer 1: one sentence anyone can read
-  detail: string[]; // layer 2: paragraphs for the expert reader
+  detail: DtpDetail; // layer 2: structured detail for the expert reader
 }
 
-export const DTP_HEADER = {
+/** The 2019 memo's stable archival URL. Set by Task 3 after verification;
+    null renders no link. */
+export const MEMO_URL: string | null = null;
+
+export const DTP_HEADER: { plain: string; detail: DtpDetail } = {
   plain:
     'In 2019 the Rollins administration published a list of charges the office ' +
     'would presume not to prosecute. The categories below tag every charge by ' +
     'how a 2020 office classification treats its charge type, not by what ' +
     'happened in the individual case.',
-  detail: [
-    'The classification comes from a worksheet created inside the District ' +
-      'Attorney’s office in 2020, used here to tag every charge by its charge ' +
-      'description (whitespace-normalized, with a 75-character fallback for ' +
-      'descriptions truncated in the source deliveries).',
-    'The review tiers come from the same worksheet’s review tab, which sorts a ' +
-      'proposed expansion of the list into an agreed section and a disagreed ' +
-      'section. The tab was circulated to four reviewers and carries one ' +
-      'reviewer’s responses. The worksheet records no adoption of the expansion.',
-  ],
+  detail: {
+    paragraphs: [
+      'The classification comes from a worksheet created inside the District ' +
+        'Attorney’s office in 2020, used here to tag every charge by its charge ' +
+        'description (whitespace-normalized, with a 75-character fallback for ' +
+        'descriptions truncated in the source deliveries).',
+      'The review tiers come from the same worksheet’s review tab, which sorts a ' +
+        'proposed expansion of the list into an agreed section and a disagreed ' +
+        'section. The tab was circulated to four reviewers and carries one ' +
+        'reviewer’s responses. The worksheet records no adoption of the expansion.',
+    ],
+    facts: [],
+  },
 };
 
-export const DTP_CAVEAT =
-  'These two groupings overlap imperfectly: some charges tagged as on the ' +
-  'decline list carry descriptions the review tab rejected. The worksheet ' +
-  'itself contains the conflict, and this project’s tagging preserves it. The ' +
-  'decline-list tags above come from the classification’s broader YY tab; the ' +
-  'operative 46-string list is the narrower set under Review status. The ' +
-  'conflict is documented in the data README and a ruling on it is pending.';
+export const DTP_CAVEAT: { text: string; conflictLinkLabel: string } = {
+  text:
+    'These two groupings overlap imperfectly: some charges tagged as on the ' +
+    'decline list carry descriptions the review tab rejected. The worksheet ' +
+    'itself contains the conflict, and this project’s tagging preserves it. The ' +
+    'decline-list tags above come from the classification’s broader YY tab; the ' +
+    'operative 46-string list is the narrower set under Review status.',
+  conflictLinkLabel: 'See the conflicting rows',
+};
 
 export const DTP_CONTENT: Record<DtpColumn, { title: string; cards: DtpCard[] }> = {
   dtp_class: {
@@ -51,69 +77,87 @@ export const DTP_CONTENT: Record<DtpColumn, { title: string; cards: DtpCard[] }>
         value: 'YY (decline list)',
         name: 'On the decline list',
         plain: 'Charge types the classification designates decline-to-prosecute.',
-        detail: [
-          'The tag comes from the worksheet’s YY tab, 69 charge-description ' +
-            'strings. That set is broader than the operative 46-string list ' +
-            'shown under Review status, and it includes drug distribution ' +
-            'charges the worksheet’s own annotations say were not in the memo. ' +
-            'In this data the tag is applied by charge description, so it ' +
-            'reflects the charge as recorded, not a case-level decision.',
-          'The memo’s own text limits the policy to the municipal courts and ' +
-            'Chelsea District Court; charges filed in Suffolk Superior Court ' +
-            'carry the tag by charge type only.',
-          'Caveat: 2,393 charges filed 2022 to 2025 carry this tag on ' +
-            'descriptions the review tab lists as proposed-but-disagreed. The ' +
-            'worksheet itself contains that conflict; a ruling is pending.',
-        ],
+        detail: {
+          paragraphs: [
+            'The tag comes from the worksheet’s YY tab. That set is broader than ' +
+              'the operative list shown under Review status, and it includes drug ' +
+              'distribution charges the worksheet’s own annotations say were not ' +
+              'in the memo. In this data the tag is applied by charge description, ' +
+              'so it reflects the charge as recorded, not a case-level decision.',
+            'The memo’s own text limits the policy to the municipal courts and ' +
+              'Chelsea District Court; charges filed in Suffolk Superior Court ' +
+              'carry the tag by charge type only.',
+            'Caveat: 2,393 charges filed 2022 to 2025 carry this tag on ' +
+              'descriptions the review tab lists as proposed-but-disagreed. The ' +
+              'worksheet itself contains that conflict; a ruling is pending.',
+          ],
+          facts: [
+            { label: 'Charge descriptions', value: '69' },
+            { label: 'Operative list', value: '46' },
+          ],
+        },
       },
       {
         value: 'NY (presumption against)',
         name: 'Presumption against',
         plain: 'Charge types the classification marks with a presumption against prosecution.',
-        detail: [
-          'Classified NY in the worksheet: not on the operative list, but ' +
-            'treated as carrying a presumption against prosecution. The ' +
-            'worksheet defines the tag to cover charges its author judged ' +
-            'should fall under the memo’s broader categories, not only charges ' +
-            'the memo names.',
-        ],
+        detail: {
+          paragraphs: [
+            'Classified NY in the worksheet: not on the operative list, but ' +
+              'treated as carrying a presumption against prosecution. The ' +
+              'worksheet defines the tag to cover charges its author judged ' +
+              'should fall under the memo’s broader categories, not only charges ' +
+              'the memo names.',
+          ],
+          facts: [],
+        },
       },
       {
         value: 'NS (case-by-case)',
         name: 'Case-by-case',
         plain: 'Charge types the classification leaves to case-by-case judgment.',
-        detail: [
-          'Classified NS in the worksheet: no presumption either way. The ' +
-            'worksheet’s own review disagrees with the case-by-case ' +
-            'designation on rows covering about three quarters of these charges.',
-        ],
+        detail: {
+          paragraphs: [
+            'Classified NS in the worksheet: no presumption either way. The ' +
+              'worksheet’s own review disagrees with the case-by-case ' +
+              'designation on rows covering about three quarters of these charges.',
+          ],
+          facts: [],
+        },
       },
       {
         value: 'NN (prosecute)',
         name: 'Ordinarily prosecuted',
         plain: 'Charge types the classification expects to be prosecuted.',
-        detail: [
-          'Classified NN in the worksheet: not cited in the memo, and judged ' +
-            'not to belong in the declination policy.',
-        ],
+        detail: {
+          paragraphs: [
+            'Classified NN in the worksheet: not cited in the memo, and judged ' +
+              'not to belong in the declination policy.',
+          ],
+          facts: [],
+        },
       },
       {
         value: 'Not listed',
         name: 'Not listed',
         plain: 'Charge descriptions that match nothing in the classification.',
-        detail: [
-          'About 1% of the charges in the 2022 to 2025 file and about 6% of ' +
-            'the charges in the pre-2022 file. Mostly truncated or rare ' +
-            'description variants that failed the match even with the ' +
-            '75-character fallback.',
-          'The pre-2022 file carries 1,079 distinct unmatched descriptions. ' +
-            'Some are plainer spellings the worksheet does not carry, such as ' +
-            '"TRESPASSING" where the worksheet carries "TRESPASS c. 266 s. 120". ' +
-            'Others are charge types the worksheet does carry, written with a ' +
-            'different statute citation, such as the destruction of property ' +
-            'charge this file cites as "c. 266 s. 127" against the worksheet’s ' +
-            '"c266 §127".',
-        ],
+        detail: {
+          paragraphs: [
+            'Mostly truncated or rare description variants that failed the ' +
+              'match even with the 75-character fallback.',
+            'The pre-2022 file carries 1,079 distinct unmatched descriptions. ' +
+              'Some are plainer spellings the worksheet does not carry, such as ' +
+              '"TRESPASSING" where the worksheet carries "TRESPASS c. 266 s. 120". ' +
+              'Others are charge types the worksheet does carry, written with a ' +
+              'different statute citation, such as the destruction of property ' +
+              'charge this file cites as "c. 266 s. 127" against the worksheet’s ' +
+              '"c266 §127".',
+          ],
+          facts: [
+            { label: 'Share of 2022-2025 charges', value: 'about 1%' },
+            { label: 'Share of 2006-2021 charges', value: 'about 6%' },
+          ],
+        },
       },
     ],
   },
@@ -124,46 +168,67 @@ export const DTP_CONTENT: Record<DtpColumn, { title: string; cards: DtpCard[] }>
         value: 'Current list',
         name: 'Current list',
         plain: 'Charge types on the operative decline list.',
-        detail: [
-          'The memo lists 15 offenses; the operative list expands them to 46 ' +
-            'charge descriptions. Where one description also appears in a ' +
-            'rejected proposal, the operative list wins.',
-        ],
+        detail: {
+          paragraphs: [
+            'The memo’s list of offenses expands into the operative list of ' +
+              'charge descriptions used here. Where one description also ' +
+              'appears in a rejected proposal, the operative list wins.',
+          ],
+          facts: [
+            { label: 'Memo offenses', value: '15' },
+            { label: 'Operative charge descriptions', value: '46' },
+          ],
+        },
       },
       {
         value: 'Proposed, agreed (never adopted)',
         name: 'Proposed and agreed, never adopted',
         plain: 'A 2020 review inside the office marked 76 further charges agreed for declination. The worksheet records no adoption of the expansion.',
-        detail: [
-          'The agreed expansion covers 107 statute-variant description ' +
-            'strings. 32 of the 107 are civil motor vehicle infractions, ' +
-            'about a third of this tier’s charge volume in the 2022 to 2025 ' +
-            'file. Filtering on this shows what the expansion would have ' +
-            'covered.',
-        ],
+        detail: {
+          paragraphs: [
+            'The agreed expansion covers statute-variant description strings. ' +
+              'Some of these are civil motor vehicle infractions, about a third ' +
+              'of this tier’s charge volume in the 2022 to 2025 file. Filtering ' +
+              'on this shows what the expansion would have covered.',
+          ],
+          facts: [
+            { label: 'Charges marked agreed', value: '76' },
+            { label: 'Statute-variant strings', value: '107' },
+            { label: 'Civil motor vehicle strings', value: '32' },
+          ],
+        },
       },
       {
         value: 'Proposed, disagreed',
         name: 'Proposed, rejected',
         plain: 'Proposed for the expansion and marked disagreed in the review.',
-        detail: [
-          '16 description strings, after the operative list takes precedence ' +
-            'over the section’s 17 raw rows. Three of those rows record a ' +
-            'deferral for consultation with the Human Trafficking Unit rather ' +
-            'than a no, and one row agrees on possession with intent while ' +
-            'refusing distribution.',
-          'Some of these strings still carry the on-the-list tag in the other ' +
-            'grouping. That is the documented inconsistency noted above.',
-        ],
+        detail: {
+          paragraphs: [
+            'These description strings are what remains after the operative ' +
+              'list takes precedence over the section’s raw rows. Three of ' +
+              'those rows record a deferral for consultation with the Human ' +
+              'Trafficking Unit rather than a no, and one row agrees on ' +
+              'possession with intent while refusing distribution.',
+            'Some of these strings still carry the on-the-list tag in the ' +
+              'other grouping. That is the documented inconsistency noted above.',
+          ],
+          facts: [
+            { label: 'Raw rows', value: '17' },
+            { label: 'Strings after precedence', value: '16' },
+          ],
+        },
       },
       {
         value: 'Not reviewed',
         name: 'Not reviewed',
         plain: 'Everything the review never looked at. It is the large majority of charges.',
-        detail: [
-          'No proposal touched these charge types; absence from review is ' +
-            'not a statement about them.',
-        ],
+        detail: {
+          paragraphs: [
+            'No proposal touched these charge types; absence from review is ' +
+              'not a statement about them.',
+          ],
+          facts: [],
+        },
       },
     ],
   },
@@ -176,7 +241,12 @@ export function cardsFor(col: DtpColumn, dataValues: string[]): DtpCard[] {
   const extras = dataValues
     .filter((v) => !knownSet.has(v))
     .sort()
-    .map((value) => ({ value, name: value, plain: '', detail: [] as string[] }));
+    .map((value) => ({
+      value,
+      name: value,
+      plain: '',
+      detail: { paragraphs: [], facts: [] } as DtpDetail,
+    }));
   return [...known, ...extras];
 }
 

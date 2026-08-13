@@ -524,6 +524,67 @@ sentence so the 69-versus-46 distinction is not buried.
 `plain.length > 20` assertion every rewritten sentence satisfies) and
 `npm run build` both pass after the rewrite.
 
+## Content relocation (v2 Task 2)
+
+`src/ui/dtpModel.ts`'s `DtpCard.detail` changed shape from `string[]` to
+`{paragraphs: string[]; facts: {label; value}[]; links?}` per
+`docs/specs/2026-08-13-dtp-modal-v2-design.md`'s "Card redesign" and "Content
+shape change" sections. No claim in the Task 6/7 table above changed. The
+task brief's chip assignments moved eleven load-bearing numbers out of prose
+paragraphs and into `facts` chips, shortening the paragraphs that carried
+them. This section records where each Task 7 claim now lives. Rows not
+listed in the table below (1, 2, 5, 8, 9, 10, 11, 13, 18, 19, 21) kept their
+sentence and paragraph position; they were only rewrapped into the new
+`paragraphs` array, and no character of their text changed.
+
+| Task 7 # | Claim | Now lives in |
+|---|---|---|
+| 3 | 69 charge-description strings on the YY tab | Chip "Charge descriptions" = 69, `dtp_class` YY card |
+| 4 | YY tab "is broader than the operative 46-string list" | The relationship ("broader than the operative list shown under Review status"): `dtp_class` YY card, paragraph 1, number removed and the sentence reflowed. The 46 figure itself: chip "Operative list" = 46, same card |
+| 6 | 46 charge descriptions on the operative list | Chip "Operative charge descriptions" = 46, `dtp_review` Current list card |
+| 7 | "The memo lists 15 offenses" | Chip "Memo offenses" = 15, `dtp_review` Current list card |
+| 12 | Not listed "about 1%" of 2022-2025 charges, "about 6%" of pre-2022 charges | Chips "Share of 2022-2025 charges" = about 1% and "Share of 2006-2021 charges" = about 6%, `dtp_class` Not listed card. Both numbers were the entire content of the sentence that carried them; that sentence's second half, "Mostly truncated or rare description variants that failed the match even with the 75-character fallback," is now the card's paragraph 1 on its own |
+| 14 | 76 further charges agreed; "the worksheet records no adoption of the expansion" | Both sentences stay in the card's `plain` field, unchanged; they were never in `detail` and Task 2 did not touch `plain`. The 76 figure is additionally surfaced as chip "Charges marked agreed" = 76, `dtp_review` Proposed-and-agreed card, so a reader who only opens the structured detail still sees it |
+| 15 | 107 statute-variant strings | Chip "Statute-variant strings" = 107, `dtp_review` Proposed-and-agreed card. Paragraph 1 of that card now reads "The agreed expansion covers statute-variant description strings" without the number |
+| 16 | "32 of the 107 are civil motor vehicle infractions, about a third" of 2022-2025 tier volume | Chip "Civil motor vehicle strings" = 32, same card. Paragraph 1 keeps "Some of these are civil motor vehicle infractions, about a third of this tier's charge volume in the 2022 to 2025 file"; "32 of the 107" became "Some of these" since both counts moved to chips |
+| 17 | "16 description strings, after the operative list takes precedence over the section's 17 raw rows" | Chips "Strings after precedence" = 16 and "Raw rows" = 17, `dtp_review` Proposed-disagreed (Rejected) card. Paragraph 1 keeps the precedence relationship, "these description strings are what remains after the operative list takes precedence over the section's raw rows," without either number |
+| 20 | 2,393 charges filed 2022-2025 carry the YY tag on a disagreed description | Unchanged: `dtp_class` YY card, paragraph 3 ("Caveat: 2,393 charges..."). Not chipped; the brief's chip list does not include this figure |
+
+**DTP_CAVEAT.** Per the task brief's Step 2, the constant's shape changed to
+`{text, conflictLinkLabel}`. Its last sentence, "The conflict is documented in
+the data README and a ruling on it is pending," was removed rather than
+relocated: it cited a document (`data/assembled/README.md`) a reader of the
+deployed site cannot reach, per the design spec's "Links" section. Every
+other sentence in the caveat is unchanged and present verbatim in
+`DTP_CAVEAT.text`. `conflictLinkLabel: "See the conflicting rows"` replaces
+the removed sentence's function; Task 3 wires the label to a link that
+switches the modal to the browse tab with the conflict filter active.
+
+**Spec correction carried forward.** Task 1 found that the design spec's "the
+16" conflict-string figure for the Browse tab's Conflicts chip does not match
+a distinct fact from the Rejected-tier chips added here: the Rejected card's
+chips ("Raw rows" = 17, "Strings after precedence" = 16) describe the size of
+the whole `Proposed, disagreed` review tier, not the narrower YY-intersected
+conflict set (10 strings; see this document's "The '16' in the design spec
+does not survive recomputation" section below). Both chips are about the
+tier, as the task brief specifies, and are unaffected by that correction. The
+Rejected card's second paragraph, "Some of these strings still carry the
+on-the-list tag in the other grouping," makes no numeric claim about the
+overlap and needed no change to stay consistent with the corrected count of
+10.
+
+**Verification.** `npm run test` (68/68; `dtpModel.test.ts` grew from 18 to 23
+tests, adding fact-chip shape assertions, a `DTP_HEADER`/`DTP_CAVEAT`/
+`MEMO_URL` shape check, and a test that no paragraph repeats one of its own
+card's chip numbers, matched on digit runs so a chip's "76" cannot falsely
+collide with a paragraph's "2,076") and `npm run build` both pass. The interim
+`src/ui/DtpFilterModal.tsx` (Task 3's file per the plan, not Task 2's) needed
+four edits to keep compiling against the new `DtpDetail` shape:
+`.detail.paragraphs` in place of `.detail` at the header and card levels, and
+`DTP_CAVEAT.text` in place of `DTP_CAVEAT`. It does not yet render fact
+chips, links, or the caveat's conflict link; that UI work is Task 3's, per
+the plan's file ownership.
+
 ## dtp-lists reconciliation (v2 Task 1)
 
 `scripts/prepare_dtp_lists.py` builds `public/data/dtp-lists.json` and
