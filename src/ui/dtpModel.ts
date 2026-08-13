@@ -262,6 +262,13 @@ const SHORT_CLASS: Record<string, string> = {
   'Not listed': 'Not listed',
 };
 
+const SHORT_REVIEW: Record<string, string> = {
+  'Current list': 'Current list',
+  'Proposed, agreed (never adopted)': 'Proposed and agreed, never adopted',
+  'Proposed, disagreed': 'Proposed, rejected',
+  'Not reviewed': 'Not reviewed',
+};
+
 export function summaryLabel(filters: Record<string, string[]>): string {
   const cls = filters.dtp_class ?? [];
   const rev = filters.dtp_review ?? [];
@@ -276,7 +283,7 @@ export function summaryLabel(filters: Record<string, string[]>): string {
     rev.length === 0
       ? 'any'
       : rev.length <= 2
-        ? rev.join(' + ')
+        ? rev.map((v) => SHORT_REVIEW[v] ?? v).join(' + ')
         : `${rev.length} selected`;
   return `${clsPart} · review: ${revPart}`;
 }

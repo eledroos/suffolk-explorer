@@ -160,4 +160,9 @@ describe('summaryLabel', () => {
       }),
     ).toBe('3 categories · review: Current list');
   });
+  it('maps review data values to card names in the sidebar', () => {
+    expect(
+      summaryLabel({ dtp_review: ['Proposed, disagreed'] }),
+    ).toBe('any category · review: Proposed, rejected');
+  });
 });
