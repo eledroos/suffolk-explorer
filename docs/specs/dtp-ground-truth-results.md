@@ -830,7 +830,7 @@ regenerated and committed. `public/data/dtp-lists.json`'s 1,300 rows compare
 equal to the previous generation (`git show HEAD:public/data/dtp-lists.json`,
 parsed and compared row by row); only `source_note` differs. The XLSX's five
 data sheets are unchanged in headers, row counts and freeze panes; only the
-About sheet's text differs. All 16 gates re-ran PASS on the committed state.
+About sheet's text differs. All 14 gates re-ran PASS on the committed state.
 
 | Finding | Ruling | Change | Where the text comes from |
 |---|---|---|---|
@@ -950,7 +950,7 @@ Browse tab:
 `npm run test` 84/84 (3 files; no test needed changing, since every chip value
 is unchanged and the digit-duplication test compares values, not labels).
 `npm run build` clean. `scripts/prepare_dtp_lists.py` re-run on the committed
-state: all 16 gates PASS. `dist/data/dtp-lists.json` and
+state: all 14 gates PASS. `dist/data/dtp-lists.json` and
 `dist/downloads/suffolk-dtp-lists.xlsx` are byte-identical (md5) to their
 `public/` sources, so the audited text is the shipped text. Dash sweep over
 `src/ui/dtpModel.ts`, `src/ui/DtpBrowseTab.tsx`, `scripts/prepare_dtp_lists.py`

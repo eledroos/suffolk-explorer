@@ -216,7 +216,7 @@ export const DTP_CONTENT: Record<DtpColumn, { title: string; cards: DtpCard[] }>
               'Trafficking Unit rather than a no, and one row agrees on ' +
               'possession with intent while refusing distribution.',
             'Some of these strings still carry the on-the-list tag in the ' +
-              'other grouping. That is the documented inconsistency noted above.',
+              'other grouping. That is the documented inconsistency noted in the caveat below.',
           ],
           facts: [
             { label: 'Review rows', value: '17' },

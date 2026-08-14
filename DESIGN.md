@@ -68,8 +68,8 @@ Deploys to Cloudflare Pages; data optionally served from R2 via `VITE_DATA_URL`.
     Tab 1: Decline list (dtp_class categories with fact chips, share bars, live
     counts via `aggregate()` minus DTP filters). Tab 2: Review status (dtp_review
     categories with the same layout). Tab 3: Browse the lists (searchable table
-    sourced from `public/data/dtp-lists.json` with drill-down filters; CSV and
-    XLSX download via `public/downloads/suffolk-dtp-lists.xlsx`). Staged
+    sourced from `public/data/dtp-lists.json` with drill-down filters; XLSX
+    download via `public/downloads/suffolk-dtp-lists.xlsx`). Staged
     Apply/Cancel, MultiSelect-identical normalization, two-line sidebar entry.
     Specs: `docs/specs/2026-08-12-dtp-filter-modal-design.md` (v1) and
     `docs/specs/2026-08-13-dtp-modal-v2-design.md` (v2).

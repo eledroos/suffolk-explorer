@@ -275,7 +275,7 @@ def main():
 
     prefix_map, collisions = build_prefix_map(cmap, order)
     gate("no 75-char-prefix collisions among workbook class-tab strings "
-         "(first-wins would apply if any existed)", True,
+         "(first-wins would apply if any existed)", collisions == 0,
          f"collision count = {collisions}")
 
     hayden_counts, hayden_unmatched = per_string_counts(HAYDEN, cmap, prefix_map)
