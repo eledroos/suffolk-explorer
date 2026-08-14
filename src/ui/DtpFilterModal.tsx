@@ -135,12 +135,13 @@ export default function DtpFilterModal({ ds, view, groupings, onSetFilter, onClo
     const total = counts[col].total;
     const pct = total > 0 ? `${(count / total) * 100}%` : '0%';
     const hasDetail = card.detail.paragraphs.length > 0 || card.detail.facts.length > 0;
+    const checked = staged[col].has(card.value);
     return (
-      <li key={card.value} className="dtp-card">
+      <li key={card.value} className={`dtp-card${checked ? ' on' : ''}`}>
         <label className="dtp-card-main">
           <input
             type="checkbox"
-            checked={staged[col].has(card.value)}
+            checked={checked}
             onChange={() => toggle(col, card.value)}
           />
           <span className="dtp-card-name">{card.name}</span>
@@ -148,8 +149,11 @@ export default function DtpFilterModal({ ds, view, groupings, onSetFilter, onClo
             {fmt(count)}
           </span>
         </label>
+        {/* A category with no charges in the current view draws no fill at
+            all; the bar's min-width would otherwise render a zero as a
+            visible stub. */}
         <div className="dtp-bar" aria-hidden="true">
-          <span style={{ width: pct }} />
+          {count > 0 && <span style={{ width: pct }} />}
         </div>
         {card.plain && <p className="dtp-card-plain">{card.plain}</p>}
         {hasDetail && (
