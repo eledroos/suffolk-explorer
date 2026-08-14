@@ -4,6 +4,7 @@ import {
   type BrowseChipKey, type DtpListRow, type DtpListsData,
 } from './dtpBrowse';
 import { SHORT_CLASS } from './dtpModel';
+import { IconDownload } from './icons';
 
 interface Props {
   /** True exactly when the modal switched to this tab via the caveat's
@@ -116,13 +117,16 @@ export default function DtpBrowseTab({ conflictsOnly, onConsumedConflicts }: Pro
 
   return (
     <div className="dtp-browse">
-      <p className="dtp-browse-provenance">
-        {state.status === 'ready' ? state.data.source_note : PROVENANCE_FALLBACK}{' '}
-        {COUNTS_NOTE}
-      </p>
-
-      <div className="dtp-browse-downloadrow">
-        <a href={XLSX_URL} download className="btn">
+      {/* The provenance note keeps a reading measure while the download sits
+          in the width beside it, so the header is one band instead of a
+          paragraph followed by a nearly empty button row. */}
+      <div className="dtp-browse-head">
+        <p className="dtp-browse-provenance">
+          {state.status === 'ready' ? state.data.source_note : PROVENANCE_FALLBACK}{' '}
+          {COUNTS_NOTE}
+        </p>
+        <a href={XLSX_URL} download className="btn dtp-browse-download">
+          <IconDownload />
           Download the lists (XLSX)
         </a>
       </div>
