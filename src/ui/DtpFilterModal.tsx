@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { aggregate, distinctValues } from '../engine';
 import type { Dataset, Grouping, ViewState } from '../contract';
 import {
@@ -50,6 +50,7 @@ export default function DtpFilterModal({ ds, view, groupings, onSetFilter, onClo
   const [staged, setStaged] = useState(() => stageFromFilters(view.filters));
   const [tab, setTab] = useState<DtpTab>('class');
   const [browseConflicts, setBrowseConflicts] = useState(false);
+  const browseTabRef = useRef<HTMLButtonElement | null>(null);
 
   // The conflict deep-link only means something while tab 3 is open; leaving
   // it (by any route: another tab, closing the modal) clears the flag so a
@@ -57,6 +58,18 @@ export default function DtpFilterModal({ ds, view, groupings, onSetFilter, onClo
   useEffect(() => {
     if (tab !== 'browse') setBrowseConflicts(false);
   }, [tab]);
+
+  // The caveat's conflict deep-link switches tabs programmatically, which
+  // unmounts the button that had focus (it lives in the panel tab 1/2 just
+  // left). The browser has nothing to hand focus to when that happens and
+  // falls back to <body> with no announcement. Move focus to the newly
+  // active Browse tab button explicitly, same as clicking it directly would.
+  // Keyed on browseConflicts (not just tab === 'browse') so this never fires
+  // for an ordinary manual click on the Browse tab, which already keeps
+  // native focus on the clicked button and needs no help.
+  useEffect(() => {
+    if (tab === 'browse' && browseConflicts) browseTabRef.current?.focus();
+  }, [tab, browseConflicts]);
 
   // Counts: one aggregate per column, same world minus the DTP filters.
   // Keyed on countSignature so a view change that cannot move the counts
@@ -234,6 +247,7 @@ export default function DtpFilterModal({ ds, view, groupings, onSetFilter, onClo
             return (
               <button
                 key={t.key}
+                ref={t.key === 'browse' ? browseTabRef : undefined}
                 id={`dtp-tab-${t.key}`}
                 role="tab"
                 aria-selected={active}
@@ -243,7 +257,9 @@ export default function DtpFilterModal({ ds, view, groupings, onSetFilter, onClo
                 onClick={() => setTab(t.key)}
               >
                 {t.label}
-                {t.col && badge > 0 && <span className="dtp-tab-badge">· {badge}</span>}
+                {t.col && badge > 0 && (
+                  <span className="dtp-tab-badge">{' · '}{badge}</span>
+                )}
               </button>
             );
           })}
