@@ -523,3 +523,459 @@ sentence so the 69-versus-46 distinction is not buried.
 `npm run test` (62/62, including the 17 `dtpModel.test.ts` content tests, whose
 `plain.length > 20` assertion every rewritten sentence satisfies) and
 `npm run build` both pass after the rewrite.
+
+## Content relocation (v2 Task 2)
+
+`src/ui/dtpModel.ts`'s `DtpCard.detail` changed shape from `string[]` to
+`{paragraphs: string[]; facts: {label; value}[]; links?}` per
+`docs/specs/2026-08-13-dtp-modal-v2-design.md`'s "Card redesign" and "Content
+shape change" sections. No claim in the Task 6/7 table above changed. The
+task brief's chip assignments moved eleven load-bearing numbers out of prose
+paragraphs and into `facts` chips, shortening the paragraphs that carried
+them. This section records where each Task 7 claim now lives. Rows not
+listed in the table below (1, 2, 5, 8, 9, 10, 11, 13, 18, 19, 21) kept their
+sentence and paragraph position; they were only rewrapped into the new
+`paragraphs` array, and no character of their text changed.
+
+| Task 7 # | Claim | Now lives in |
+|---|---|---|
+| 3 | 69 charge-description strings on the YY tab | Chip "Worksheet YY strings" = 69, `dtp_class` YY card (relabeled from "Charge descriptions" in the fix wave below, ruling R4) |
+| 4 | YY tab "is broader than the operative 46-string list" | The relationship ("broader than the operative list shown under Review status"): `dtp_class` YY card, paragraph 1, number removed and the sentence reflowed. The 46 figure itself: chip "Operative list strings" = 46, same card (relabeled from "Operative list", ruling R5) |
+| 6 | 46 charge descriptions on the operative list | Chip "Operative list strings" = 46, `dtp_review` Current list card (relabeled from "Operative charge descriptions", ruling R5, so both cards name the same quantity the same way) |
+| 7 | "The memo lists 15 offenses" | Chip "Memo offenses" = 15, `dtp_review` Current list card |
+| 12 | Not listed "about 1%" of the 2022-2025 file, "about 6%" of the pre-2022 file | Chips "Share of the 2022-2025 file" = about 1% and "Share of the pre-2022 file" = about 6%, `dtp_class` Not listed card. The Task 2 labels ("Share of 2022-2025 charges", "Share of 2006-2021 charges") restated a file-scoped share as a date-scoped one and were wrong under the new scope; ruling R1 restored the file scope this row's verified values were computed under. See C1 in the fix wave below. Both numbers were the entire content of the sentence that carried them; that sentence's second half, "Mostly truncated or rare description variants that failed the match even with the 75-character fallback," is now the card's paragraph 1 on its own |
+| 14 | 76 further charges agreed; "the worksheet records no adoption of the expansion" | The "worksheet records no adoption" sentence stays in the card's `plain` field; Task 2 left `plain` untouched. The "76 further charges" part dropped the "76" in Task 3 (see Ledger carry-item C, line 778): plain now reads "A 2020 review inside the office marked further charges agreed for declination." The 76 figure is additionally surfaced as chip "Descriptions marked agreed" = 76, `dtp_review` Proposed-and-agreed card, so a reader who only opens the structured detail still sees it (relabeled from "Charges marked agreed" because "charges" counts rows everywhere else in this UI, then from "Charge types" because the 107 rows yield no 76 under any distinct-string derivation; see NB1 in the re-review round below) |
+| 15 | 107 statute-variant strings | Chip "Statute-variant strings" = 107, `dtp_review` Proposed-and-agreed card. Paragraph 1 of that card now reads "The agreed expansion covers statute-variant description strings" without the number |
+| 16 | "32 of the 107 are civil motor vehicle infractions, about a third" of 2022-2025 tier volume | Chip "Civil motor vehicle strings" = 32, same card. Paragraph 1 keeps "Some of these are civil motor vehicle infractions, about a third of this tier's charge volume in the 2022 to 2025 file"; "32 of the 107" became "Some of these" since both counts moved to chips |
+| 17 | "16 description strings, after the operative list takes precedence over the section's 17 raw rows" | Chips "Strings left after precedence" = 16 and "Review rows" = 17, `dtp_review` Proposed-disagreed (Rejected) card (relabeled from "Raw rows" and "Strings after precedence", ruling R6; R6's "Distinct strings" for the 16 was then corrected back, since all 17 raw rows are distinct strings and the 16 is what precedence leaves. See NB2 in the re-review round below). Paragraph 1 keeps the precedence relationship, "these description strings are what remains after the operative list takes precedence over the section's raw rows," without either number |
+| 20 | 2,393 charges filed 2022-2025 carry the YY tag on a disagreed description | `dtp_class` YY card, paragraph 3. Task 3 rewrote the citation tail (see Ledger carry-item B, lines 755-761): moved from "the worksheet itself contains that conflict; a ruling is pending" to "That conflict is in the source classification. The Browse tab flags the conflicting rows." The 2,393 figure itself is unchanged; the sentence's content and direction shifted from unreachable documentation to UI navigation. Not chipped; the brief's chip list does not include this figure |
+
+**DTP_CAVEAT.** Per the task brief's Step 2, the constant's shape changed to
+`{text, conflictLinkLabel}`. Its last sentence, "The conflict is documented in
+the data README and a ruling on it is pending," was removed rather than
+relocated: it cited a document (`data/assembled/README.md`) a reader of the
+deployed site cannot reach, per the design spec's "Links" section. Every
+other sentence in the caveat is unchanged and present verbatim in
+`DTP_CAVEAT.text`. `conflictLinkLabel: "See the conflicting rows"` replaces
+the removed sentence's function; Task 3 wires the label to a link that
+switches the modal to the browse tab with the conflict filter active.
+
+**Spec correction carried forward.** Task 1 found that the design spec's "the
+16" conflict-string figure for the Browse tab's Conflicts chip does not match
+a distinct fact from the Rejected-tier chips added here: the Rejected card's
+chips ("Raw rows" = 17, "Strings after precedence" = 16) describe the size of
+the whole `Proposed, disagreed` review tier, not the narrower YY-intersected
+conflict set (10 strings; see this document's "The '16' in the design spec
+does not survive recomputation" section below). Both chips are about the
+tier, as the task brief specifies, and are unaffected by that correction. The
+Rejected card's second paragraph, "Some of these strings still carry the
+on-the-list tag in the other grouping," makes no numeric claim about the
+overlap and needed no change to stay consistent with the corrected count of
+10.
+
+**Verification.** `npm run test` (68/68; `dtpModel.test.ts` grew from 18 to 23
+tests, adding fact-chip shape assertions, a `DTP_HEADER`/`DTP_CAVEAT`/
+`MEMO_URL` shape check, and a test that no paragraph repeats one of its own
+card's chip numbers, matched on digit runs so a chip's "76" cannot falsely
+collide with a paragraph's "2,076") and `npm run build` both pass. The interim
+`src/ui/DtpFilterModal.tsx` (Task 3's file per the plan, not Task 2's) needed
+four edits to keep compiling against the new `DtpDetail` shape:
+`.detail.paragraphs` in place of `.detail` at the header and card levels, and
+`DTP_CAVEAT.text` in place of `DTP_CAVEAT`. It does not yet render fact
+chips, links, or the caveat's conflict link; that UI work is Task 3's, per
+the plan's file ownership.
+
+## dtp-lists reconciliation (v2 Task 1)
+
+`scripts/prepare_dtp_lists.py` builds `public/data/dtp-lists.json` and
+`public/downloads/suffolk-dtp-lists.xlsx`, the browse/download assets for the
+v2 modal's third tab. It mirrors `../assembled/build_pre2022.py`'s `norm_ws`,
+`load_dtp`, and `load_review` (including `current > agreed > disagreed`
+precedence) line for line, reading the same
+`SCDAO-DTP-Classification.xlsx` workbook and the same two parquets
+(`public/data/hayden.parquet`, filed_in_window 2022-2025; `public/data/
+history.parquet`, filed_in_window 2006-2021). Run in a scratch venv
+(`cd /tmp && mkdir -p dtp-v2 && cd dtp-v2 && uv venv && uv pip install duckdb
+openpyxl`).
+
+**Method for per-string counts.** The build's `dtp_of()` only returns a class
+label, not which workbook string matched, so this script extends `load_dtp()`
+to also track each workbook string's original-case display text and its
+first-wins insertion order, then builds a 75-char-prefix index over that
+same order (`build_prefix_map`) so any raw `charge_description` in either
+parquet, matched exact-then-75-char-prefix exactly as the build does, can be
+attributed to exactly one workbook string. Summing those per-string counts by
+class must reproduce the parquet's own `dtp_class` group-by totals; that
+equality is the main reconciliation gate.
+
+### Gate output, verbatim
+
+```
+reading workbook: /Users/nasser/_dev/nasser-blog-posts/2026-08-03 Suffolk DA/data/suffolk-package/reference/SCDAO-DTP-Classification.xlsx
+class-tab strings: {'YY': 69, 'NY': 107, 'NS': 627, 'NN': 497} = 1300 total (first-wins across tabs, so this can be < the sum if any string repeats across tabs)
+[PASS] YY tab holds 69 strings -- got 69
+review-tab exact dict, distinct strings by label (independent of the class tabs): {'Current list': 46, 'Proposed, agreed (never adopted)': 107, 'Proposed, disagreed': 16}
+[PASS] review tab: 46 current / 107 agreed / 16 disagreed-after-precedence -- got {'Current list': 46, 'Proposed, agreed (never adopted)': 107, 'Proposed, disagreed': 16}
+[PASS] no 75-char-prefix collisions among workbook class-tab strings (first-wins would apply if any existed) -- collision count = 0
+hayden: 159,258 charges attributed to a workbook string, 1,876 unmatched (Not listed)
+history: 855,150 charges attributed to a workbook string, 18,957 unmatched (Not listed)
+[PASS] hayden YY (decline list): sum of per-string n_2022_2025 == parquet class total -- sum=39,106 parquet=39,106
+[PASS] hayden NY (presumption against): sum of per-string n_2022_2025 == parquet class total -- sum=30,563 parquet=30,563
+[PASS] hayden NS (case-by-case): sum of per-string n_2022_2025 == parquet class total -- sum=45,088 parquet=45,088
+[PASS] hayden NN (prosecute): sum of per-string n_2022_2025 == parquet class total -- sum=44,501 parquet=44,501
+[PASS] history YY (decline list): sum of per-string n_2006_2021 == parquet class total -- sum=221,881 parquet=221,881
+[PASS] history NY (presumption against): sum of per-string n_2006_2021 == parquet class total -- sum=139,974 parquet=139,974
+[PASS] history NS (case-by-case): sum of per-string n_2006_2021 == parquet class total -- sum=301,878 parquet=301,878
+[PASS] history NN (prosecute): sum of per-string n_2006_2021 == parquet class total -- sum=191,417 parquet=191,417
+[PASS] JSON rows: review-tier tally matches the independent workbook count (every review-tab string found a home among the class-tab strings) -- got {'Current list': 46, 'Proposed, disagreed': 16, 'Proposed, agreed (never adopted)': 107}
+[PASS] conflict rows: JSON string count == hayden cross-tab distinct-string count -- JSON=10 parquet cross-tab=10
+[PASS] conflict rows: charge-level count == 2,393 on record -- got 2,393
+NOTE: the design spec and task brief say conflict rows number 16 (the full disagreed-tier count). The recomputed, internally-consistent value is 10: of the 16 disagreed-tier strings, only 10 are ALSO class YY (the other 6 are NY or NS in the class tabs, since 'disagreed' describes a proposal to change a charge's class, not its current one). This does not fail the gate; the gate checks internal consistency (JSON vs parquet cross-tab), which holds at 10.
+
+all gates passed. 1300 rows.
+wrote .../public/data/dtp-lists.json: 1300 rows, 295,756 bytes
+wrote .../public/downloads/suffolk-dtp-lists.xlsx: 108,992 bytes
+```
+
+### The "16" in the design spec does not survive recomputation; the correct conflict count is 10
+
+`docs/specs/2026-08-13-dtp-modal-v2-design.md` states, of the browse tab's
+Conflicts filter chip, that it "shows the strings tagged YY whose review tier
+is Rejected (**the 16**)." That figure conflates two different counts that
+happen to share a source number:
+
+- The review tab's `Proposed, disagreed` tier has **16** distinct strings
+  after `current > agreed > disagreed` precedence (unconditional on class;
+  already verified in the Task 6 section above).
+- Of those 16, only **10** are *also* tagged class YY in the class tabs. The
+  other 6 are NY (5 strings) or NS (1 string) in the class tabs. This makes
+  sense once named: "disagreed" describes a reviewer's response to a
+  *proposal to change* a charge's class, most often a proposal to move an
+  NY- or NS-classified charge onto the decline list. A description already
+  sitting on the YY tab and *also* carrying a disagreed review response is
+  the exception (10 of 16), not the rule.
+
+Both counts were independently confirmed against `public/data/hayden.parquet`
+directly, not just against the workbook:
+
+```sql
+-- distinct charge_description strings, YY class AND disagreed review, filed 2022-2025
+SELECT count(*) FROM (
+  SELECT DISTINCT charge_description FROM read_parquet('public/data/hayden.parquet')
+  WHERE filed_in_window AND dtp_class LIKE 'YY%' AND dtp_review = 'Proposed, disagreed'
+);
+-- 10
+
+-- charge-level count, same filter
+SELECT count(*) FROM read_parquet('public/data/hayden.parquet')
+WHERE filed_in_window AND dtp_class LIKE 'YY%' AND dtp_review = 'Proposed, disagreed';
+-- 2393 (matches the figure already on record from Task 6/7 above)
+```
+
+The charge-level figure (2,393) is unaffected; it was always a charge count,
+not a string count, and it holds under both readings. Only the *string*
+count changes: **10, not 16.** Task 1's JSON emits 10 rows with
+`"conflict": true`, and the XLSX About sheet states the count as generated
+(10 distinct descriptions, 2,393 charges filed 2022-2025). The design spec's
+"the 16" and the browse-tab Conflicts chip copy planned for Task 3/4 should
+be corrected to 10 before they ship; this was out of scope for Task 1 to fix
+in the spec itself, so it is flagged here for the task that touches that
+copy.
+
+### XLSX read-back assertions
+
+Opened with openpyxl in the same scratch venv:
+
+- `wb.sheetnames == ['About', 'All lists', 'Decline list (YY)', 'Presumption against (NY)', 'Case-by-case (NS)', 'Ordinarily prosecuted (NN)']` -- **PASS**
+- Every data sheet's header row is exactly `['Description', 'Class', 'Review tier', 'Charges filed 2022-2025', 'Charges filed 2006-2021']`, bold, with `freeze_panes == 'A2'` -- **PASS** (all five data sheets)
+- Row counts per data sheet match the per-tab string counts: All lists 1,300; Decline list (YY) 69; Presumption against (NY) 107; Case-by-case (NS) 627; Ordinarily prosecuted (NN) 497 -- **PASS**
+- `public/data/dtp-lists.json`: `generated` and `source_note` present and match the brief's schema; rows sorted class order YY/NY/NS/NN then description A-Z within class -- **PASS** (verified over all 1,300 rows, not sampled)
+- Spot-checked rows: a conflict row (`COCAINE, DISTRIBUTE c94C §32A(c)`, YY, `Proposed, disagreed`, `conflict: true`, 171 charges 2022-2025 / 539 2006-2021), a zero-count row (`SCHOOL, FAIL SEND CHILD TO c76 §2`, NY, 0 / 0), and the largest string per class (YY: `LICENSE SUSPENDED, OP MV WITH c90 §23`, 6,451 charges 2022-2025; NY: `UNLICENSED OPERATION OF MV c90 §10`, 7,353; NS: `A&B ON FAMILY/HOUSEHOLD MEMBER c265 §13M`, 7,393; NN: `A&B WITH DANGEROUS WEAPON c265 §15A(b)`, 4,951) -- **PASS**
+
+## Task 3: tabs, card redesign, links, sidebar (v2)
+
+`src/ui/DtpFilterModal.tsx` was rebuilt around a three-tab structure (Decline
+list / Review status / Browse the lists), the card redesign (share bar, fact
+chips, links row, collapsed detail), and the two links this spec calls for.
+`src/ui/FilterPanel.tsx`'s `dtp-entry` row became the two-line sidebar entry.
+`src/ui/dtpModel.ts` picked up the three ledger carry-items below plus
+`MEMO_URL`.
+
+### Memo URL verification (spec Step 3)
+
+**Search.** `grep -in "rollins.*memo\|policy memo"` over the blog repo's
+`notes.md` and `debate/03-research/evidence/*.md` located
+`debate/03-research/evidence/office-continuity-and-published-data.md`, whose
+"The Rollins Memo, March 25, 2019" section records two working URLs found
+during that essay's fact-check:
+
+- A Wayback Machine capture: `https://web.archive.org/web/20190326183822/http://www.suffolkdistrictattorney.com/wp-content/uploads/2019/03/The-Rachael-Rollins-Policy-Memo.pdf`, retrieved there as HTTP 200, 41,909,954 bytes.
+- The live SCDAO server copy: `https://www.suffolkdistrictattorney.com/s/The-Rachael-Rollins-Policy-Memo.pdf`, HTTP 200 as of 2026-08-08.
+
+That same document records that the live site's navigation entry and landing
+page for the memo ("Rachael Rollins Policy Memo") return 404 today; only the
+PDF asset and the original press release survive on the live server. Per the
+spec's "external archival URL" preference (a Wayback snapshot or an
+equivalently stable host, not a page that could be taken down by the current
+office), the Wayback capture was chosen as the candidate.
+
+**Verification.** Loaded in a real Playwright/Chromium browser on 2026-08-13:
+navigated to the Wayback URL above and confirmed it renders (not a Wayback
+"page not archived" placeholder). The page shows the Wayback toolbar over a
+PDF.js viewer, page 1 of 66, with the thumbnail and rendered first page
+reading "THE RACHAEL ROLLINS POLICY MEMO." Screenshot:
+`.playwright-mcp/dtp-v2-shots/memo-wayback-check.png` (in the blog repo, not
+this repo). Page count (66) is consistent with the fact-check note's "a 65-page
+policy memo" (SCDAO's own press-release description; off-by-one is cover-page
+counting, not a different document).
+
+**Result.** `MEMO_URL` in `src/ui/dtpModel.ts` is set to the Wayback URL
+above. Linked in the modal header on the phrase "published a list"
+(`target="_blank" rel="noopener noreferrer"`, with an external-link glyph).
+`dtpModel.test.ts`'s `MEMO_URL` test was updated from asserting `null` to
+asserting a non-null `https://web.archive.org/...` string.
+
+### Ledger carry-item A: conflict count is 10, not 16
+
+No UI text introduced by Task 3 states a number for the conflicting rows.
+`DTP_CAVEAT.conflictLinkLabel` is "See the conflicting rows" (no count). The
+YY card's caveat paragraph (below) also carries no count. This matches the
+Task 1 finding above ("The '16' in the design spec does not survive
+recomputation; the correct conflict count is 10"): the correction was made by
+omission, not by swapping 16 for 10 in visible copy, since no shipped
+sentence needed a number here.
+
+### Ledger carry-item B: YY card's third paragraph, citation tail replaced
+
+The YY card's (`dtp_class`, "On the decline list") third detail paragraph
+cited "the data README" and "a ruling is pending", both unreachable by a
+deployed-site reader per the design spec's "Links" section. Changed in
+`src/ui/dtpModel.ts`:
+
+```diff
+- 'Caveat: 2,393 charges filed 2022 to 2025 carry this tag on ' +
+-   'descriptions the review tab lists as proposed-but-disagreed. The ' +
+-   'worksheet itself contains that conflict; a ruling is pending.',
++ '2,393 charges filed 2022 to 2025 carry this tag on descriptions ' +
++   'the review tab rejected. That conflict is in the source ' +
++   'classification. The Browse tab flags the conflicting rows.',
+```
+
+The factual content is unchanged (still the 2,393-charge figure verified in
+the Task 6/7 table above, row 20); only the citation tail changed, from a
+document the reader cannot open to a pointer at UI the reader can reach once
+Task 4 ships the Browse tab. This is a UI pointer, not a new factual claim,
+so it required no new source verification.
+
+### Ledger carry-item C: agreed card's plain sentence, digit duplication
+
+The `dtp_review` "Proposed and agreed, never adopted" card's `plain` sentence
+repeated the "76" figure that Task 2 had already moved into a fact chip
+("Charges marked agreed" = 76). Changed in `src/ui/dtpModel.ts`:
+
+```diff
+- plain: 'A 2020 review inside the office marked 76 further charges agreed for declination. The worksheet records no adoption of the expansion.',
++ plain: 'A 2020 review inside the office marked further charges agreed for declination. The worksheet records no adoption of the expansion.',
+```
+
+`dtpModel.test.ts`'s digit-duplication test previously checked only
+`detail.paragraphs` against `detail.facts`. Extended to also fold `card.plain`
+into the prose-numbers set being compared against chip numbers, so a future
+regression in either `plain` or a paragraph is caught. All nine known cards
+(five `dtp_class`, four `dtp_review`) pass with the extended check; no other
+card's `plain` field carries any digit.
+
+**Verification.** `npm run test` (68/68; `dtpModel.test.ts` still at 23 tests,
+two of them changed in place: the `MEMO_URL` test and the digit-duplication
+test) and `npm run build` both pass. Browser pass (2026-08-13, dev server on
+port 5211, Playwright): tab bar click and ArrowRight keyboard nav both move
+focus and selection; staged-count badge ("Decline list · 2") appears live off
+`staged`, before Apply; share bars render proportional widths for each card
+against its section total; fact chips render (69/46 on the YY card, 76/107/32
+on the agreed card) with no digit overlap against the reflowed prose; the
+memo link opens the verified Wayback URL in a new tab; the caveat's "See the
+conflicting rows" link switches to tab 3, the placeholder renders, and
+`console.log` confirms `browseConflicts` is `true` on that transition and
+resets to `false` on any subsequent tab change (verified by manually
+re-entering tab 3 after leaving it); the sidebar's two-line entry was checked
+active and inactive at 1440px and 1000px (drawer). Screenshots under
+`.playwright-mcp/dtp-v2-shots/` in the blog repo.
+
+One observation outside this task's scope: toggling dark theme and then
+screenshotting an open native `<dialog>` (via Playwright) rendered the modal
+body as light-colored in the PNG despite `getComputedStyle` on the `<dialog>`
+element confirming the correct dark `--surface` background and white text
+were applied. The same mismatch reproduces on the pre-existing, unmodified
+"About" modal, so it is not a regression from this task's changes; it looks
+like a headless-Chromium/native-`<dialog>`-top-layer screenshot compositing
+quirk rather than a real CSS defect, but it was not investigated further
+since `Modal.tsx` and the base `.modal` rule are outside this task's file
+list.
+
+## Fix wave: the v2 adversarial content pass
+
+`.superpowers/sdd/2026-08-13-dtp-modal-v2/pass-content.md` re-derived every v2
+number against the workbook, both parquets and the memo PDF, and disputed none
+of them: "Only the labels are wrong (C1, I1, I2, I3, I4), not the arithmetic."
+What it found is that shortening verified sentences into fact chips dropped the
+nouns that scoped them, and that the XLSX, the copy that leaves the site,
+carried none of the corrections the modal spent Task 7 adding. This fix wave
+changes labels and prose. No value changed, and no claim was added that is not
+already verified in the Task 6 or Task 7 tables above.
+
+### Assets: `scripts/prepare_dtp_lists.py` and its two outputs
+
+The script's `SOURCE_NOTE` and About-sheet text changed; both assets were
+regenerated and committed. `public/data/dtp-lists.json`'s 1,300 rows compare
+equal to the previous generation (`git show HEAD:public/data/dtp-lists.json`,
+parsed and compared row by row); only `source_note` differs. The XLSX's five
+data sheets are unchanged in headers, row counts and freeze panes; only the
+About sheet's text differs. All 14 gates re-ran PASS on the committed state.
+
+| Finding | Ruling | Change | Where the text comes from |
+|---|---|---|---|
+| C2 (attribution) | R2 | About sheet's title line and paragraph 1 stop calling the classification the office's instrument: "a decline-to-prosecute classification worksheet made inside the Suffolk County District Attorney's office", "the worksheet assigns to it" | Reflow of the header detail's already-verified "a worksheet created inside the District Attorney's office in 2020" (Task 7 row 1) |
+| C2 (69 versus 46) | R2 | New bolded About section, "The decline list (YY) sheet is broader than the operative list": the YY tab holds 69 descriptions and the sheet carries all 69; the operative list is the narrower 46, the rows marked `Current list` in the Review tier column; the extras include drug distribution charges the worksheet's own annotations say were not in the memo; the worksheet records no adoption of the expansion | Reflow of the modal's YY card and `DTP_CAVEAT`. 69 = Task 7 row 3, 46 = Task 7 row 6, the annotation claim = Task 7 row 5, the no-adoption claim = Task 7 row 14. The two counts are interpolated from the gated values (`per_tab_added['YY']`, `review_tally['Current list']`), not typed as literals |
+| I9 | R2 | The Conflicts paragraph names no "'Conflicts' rows" the workbook does not label. It gives the recipe instead: "take the rows where Class is 'YY (decline list)' and Review tier is 'Proposed, disagreed'", keeping the 10-descriptions / 2,393-charges statement | Recipe verified by running it against the shipped workbook: `All lists` rows matching both values number 10 and their `Charges filed 2022-2025` sum to 2,393, and the 10 descriptions are the same set the JSON marks `"conflict": true` |
+| I8 (XLSX half) | R2 | New bolded About section, "Where the two count columns come from", naming the 2022-2025 file and the pre-2022 file behind the two columns and stating that each counts every charge filed in that window across the whole file, whatever the explorer is filtered to | The two files are the parquets the script reads (`public/data/hayden.parquet`, `public/data/history.parquet`, both `WHERE filed_in_window`); the reconciliation section above proves each column's per-class sums against those files |
+| I7 | R2 | `source_note` becomes "The data behind this view is derived from a classification worksheet created inside the Suffolk County District Attorney's office in 2020, applied to charge records by charge description. The table and the downloadable spreadsheet are derived; the original worksheet is not distributed." | Same provenance facts as before (Task 7 row 1); the referents change from "this file" and "the XLSX beside it", which have no on-screen target, to the table and the download button the reader can see |
+| M1 (About half) | R11 | One About line defines the Review tier column's three values and states that a blank means the review never covered that description | Reflow of the `Not reviewed` card ("Everything the review never looked at", "absence from review is not a statement about them") and of `load_review()`'s own three-section docstring |
+
+### Gate output on the committed state, verbatim
+
+```
+[PASS] YY tab holds 69 strings -- got 69
+[PASS] review tab: 46 current / 107 agreed / 16 disagreed-after-precedence -- got {'Current list': 46, 'Proposed, agreed (never adopted)': 107, 'Proposed, disagreed': 16}
+[PASS] no 75-char-prefix collisions among workbook class-tab strings (first-wins would apply if any existed) -- collision count = 0
+[PASS] hayden YY (decline list): sum of per-string n_2022_2025 == parquet class total -- sum=39,106 parquet=39,106
+[PASS] hayden NY (presumption against): sum of per-string n_2022_2025 == parquet class total -- sum=30,563 parquet=30,563
+[PASS] hayden NS (case-by-case): sum of per-string n_2022_2025 == parquet class total -- sum=45,088 parquet=45,088
+[PASS] hayden NN (prosecute): sum of per-string n_2022_2025 == parquet class total -- sum=44,501 parquet=44,501
+[PASS] history YY (decline list): sum of per-string n_2006_2021 == parquet class total -- sum=221,881 parquet=221,881
+[PASS] history NY (presumption against): sum of per-string n_2006_2021 == parquet class total -- sum=139,974 parquet=139,974
+[PASS] history NS (case-by-case): sum of per-string n_2006_2021 == parquet class total -- sum=301,878 parquet=301,878
+[PASS] history NN (prosecute): sum of per-string n_2006_2021 == parquet class total -- sum=191,417 parquet=191,417
+[PASS] JSON rows: review-tier tally matches the independent workbook count (every review-tab string found a home among the class-tab strings) -- got {'Current list': 46, 'Proposed, disagreed': 16, 'Proposed, agreed (never adopted)': 107}
+[PASS] conflict rows: JSON string count == hayden cross-tab distinct-string count -- JSON=10 parquet cross-tab=10
+[PASS] conflict rows: charge-level count == 2,393 on record -- got 2,393
+
+all gates passed. 1300 rows.
+wrote .../public/data/dtp-lists.json: 1300 rows, 295,789 bytes
+wrote .../public/downloads/suffolk-dtp-lists.xlsx: 109,475 bytes
+```
+
+XLSX read-back after regeneration: sheet names, per-sheet headers, bold header
+row, `freeze_panes == 'A2'` and row counts (All lists 1,300; Decline list (YY)
+69; Presumption against (NY) 107; Case-by-case (NS) 627; Ordinarily prosecuted
+(NN) 497) all match the assertions recorded in the Task 1 section above. Dash
+sweep over the new About text and `source_note`: no em dash, en dash, figure
+dash, horizontal bar, minus sign or non-breaking hyphen.
+
+### Modal and Browse tab: `src/ui/dtpModel.ts`, `src/ui/DtpBrowseTab.tsx`
+
+Every chip below keeps the value the Task 6 or Task 7 table verified. Only the
+label changed, and each new label restores the noun that made the number true.
+The relocation table above was updated in place so it names the shipped labels.
+
+| Finding | Ruling | Claim | Label before | Label now |
+|---|---|---|---|---|
+| C1 | R1 | Not listed is about 1% of the 2022-2025 file (Task 7 row 12: 2,124/200,630 = 1.06%, all rows in that file) | Share of 2022-2025 charges | **Share of the 2022-2025 file** |
+| C1 | R1 | Not listed is about 6% of the pre-2022 file (Task 7 row 12: 63,555/1,092,889 = 5.82%, all rows in that file) | Share of 2006-2021 charges | **Share of the pre-2022 file** |
+| I1 | R3, then NB1 | 76, the `DTP PROPOSED NEW CHARGES AGREED (76 new)` header's own count (Task 7 row 14) | Charges marked agreed | **Descriptions marked agreed** (R3's "Charge types" did not survive the re-review; see NB1 below) |
+| I2 | R4 | 69 description strings on the worksheet's YY tab (Task 7 row 3) | Charge descriptions | **Worksheet YY strings** |
+| I3 | R5 | 46 operative-list strings, on both the YY card and the Current list card (Task 7 rows 4 and 6) | Operative list / Operative charge descriptions | **Operative list strings** (both cards) |
+| I4 | R6, then NB2 | 17 rows in the disagreed section, 16 strings left after the current list takes precedence (Task 7 row 17) | Raw rows / Strings after precedence | **Review rows** / **Strings left after precedence** (R6's "Distinct strings" did not survive the re-review; see NB2 below) |
+
+Why C1 needed the file scope back: `filed_in_window` in `history.parquet`
+marks charges filed 2006-2021, and the "about 6%" figure is a share of every
+row in that file, whose filing dates run 1999-01-01 to 2022-01-12. Read as a
+2006-2021 share it is 18,957/874,107 = 2.17%, and the card printing the chip
+shows 2.0% next to it under the history toggle. The verified claim was always
+file-scoped (Task 7 row 12, "all rows in each file"); Task 2's relocation
+turned the file into a date range without re-deriving. The label now says what
+was measured.
+
+Three further copy changes, no number touched:
+
+- **I5 (R7).** `DTP_CAVEAT` renders on both tabs since Task 3 split the
+  sections, so "the decline-list tags above" pointed at nothing on the Review
+  status tab. "above" is gone; the sentence names both tabs' objects
+  explicitly and reads whole on either: "The decline-list tags come from the
+  classification's broader YY tab; the operative 46-string list is the
+  narrower set under Review status."
+- **M2.** The YY card's third paragraph said "descriptions the review tab
+  rejected", true for 9 of the 10 conflict descriptions; the tenth is the row
+  whose annotation reads "PWID in memo and agree, Distribution not in memo and
+  would not add at this time" (Task 7 row 18). It now reads "descriptions the
+  review tab put in its disagreed section", which is true of the section for
+  all 17 rows.
+- **M3.** "this project's tagging preserves it" became "the tagging here
+  preserves it": the modal never names a project.
+
+Browse tab:
+
+- **I6 (R8).** The conflict flag's title and accessible name are now neutral,
+  "On the YY tab and in the review's disagreed section", rather than asserting
+  a rejection the worksheet does not record for every flagged row (three read
+  `HTU needs to be consulted`, one partly agrees; Task 7 row 18). The
+  `Rejected` review chip stays: tier membership is factual, and the tier's own
+  card is named "Proposed, rejected".
+- **I8 (R9).** The provenance line gains one sentence, "Counts cover each
+  dataset's filed charges and ignore any active filters." The two count columns
+  are computed once by `scripts/prepare_dtp_lists.py` over each parquet's
+  `filed_in_window` rows and do not move with the lens, the date range or any
+  filter, while every card on the other two tabs is counted against the current
+  view. (The sentence first shipped as "Counts cover the full datasets", which
+  overstated the scope: `filed_in_window` is narrower than either file. See
+  NB4 below.)
+- **M4.** The loading and error states showed a shorter provenance sentence
+  that dropped the derived-and-not-distributed disclosure. Both states now
+  render `PROVENANCE_FALLBACK`, which mirrors the JSON's `source_note`.
+
+### Deferred, with reasons
+
+- **M1, Browse half.** The finding asks for a clause in the provenance line
+  defining a blank review. Ruling R9 fixes that line's addition at one
+  sentence, so the clause was not added there. The About sheet half was
+  applied (see the assets table above), which is where a reader of the
+  downloaded file meets the blank column.
+- **M5.** Rendering a line above the table explaining the flag when the
+  Conflicts chip is active needs new markup and a new style rule, past the
+  one-line scope this wave was given. The flag's meaning is carried by its
+  title and accessible name (I6 above) and by the caveat sentence that
+  deep-links to this view.
+
+### Verification
+
+`npm run test` 84/84 (3 files; no test needed changing, since every chip value
+is unchanged and the digit-duplication test compares values, not labels).
+`npm run build` clean. `scripts/prepare_dtp_lists.py` re-run on the committed
+state: all 14 gates PASS. `dist/data/dtp-lists.json` and
+`dist/downloads/suffolk-dtp-lists.xlsx` are byte-identical (md5) to their
+`public/` sources, so the audited text is the shipped text. Dash sweep over
+`src/ui/dtpModel.ts`, `src/ui/DtpBrowseTab.tsx`, `scripts/prepare_dtp_lists.py`
+and `public/data/dtp-lists.json`: no em dash, en dash, figure dash, horizontal
+bar, minus sign or non-breaking hyphen. `package-lock.json` is byte-identical
+to `3727e67` again (same md5), closing the regression pass's one Minor
+finding: `git diff 3727e67 -- package-lock.json` is empty.
+
+### Re-review round: the relabels' own breakage
+
+The content re-review confirmed both Criticals fixed from source and found that
+four of the new labels or sentences broke on their own terms. All four values
+are still unchanged; these are label and wording corrections, one commit.
+
+| # | What was wrong | Now reads |
+|---|---|---|
+| NB1 (Important) | "Charge types marked agreed" = 76 does not survive derivation: the agreed section's 107 rows yield 105, 101 or 68 distinct charge types depending on how the type is cut, never 76. 76 is the count the worksheet's own header gives, and it tracks the rows carrying a reviewer response, not a count of charge types | Chip **"Descriptions marked agreed"** = 76 |
+| NB2 (Important) | "Distinct strings" = 16 is false as written: all 17 raw rows in the disagreed section are distinct strings. 16 is what the section has left after `current > agreed > disagreed` precedence moves `METHAMPHETAMINE, POSSESS TO DISTRIB c94C §32A(c)` to the current list (Task 6 row 4) | Chip **"Strings left after precedence"** = 16, with "Review rows" = 17 unchanged |
+| NB4 (Minor) | "Counts cover the full datasets" overstates: both count columns are computed over `filed_in_window` rows only, which is narrower than either file | **"Counts cover each dataset's filed charges and ignore any active filters."** |
+| NB5 (Minor) | `DTP_CAVEAT` still said "descriptions the review tab rejected" after M2 changed the YY card to "disagreed section", so one screen carried two words for one thing | Caveat sentence 1: "some charges tagged as on the decline list carry descriptions the review tab **marked disagreed**" |
+
+**NB3, deferred by ruling.** The conflict flag's tooltip uses the term "YY tab"
+without defining it. The term is defined in `DTP_CAVEAT`, which is the deep-link
+entry path to the flagged rows, so a reader arriving at the flag has met it.
+Recorded, no change.
+
+`npm run test` 84/84 and `npm run build` clean after the four edits. No chip
+value changed, so the digit-duplication test needed no extension.

@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
-  DTP_CONTENT, DTP_COLUMNS, cardsFor, normalizeSelection,
+  DTP_CONTENT, DTP_COLUMNS, DTP_CAVEAT, DTP_HEADER, MEMO_URL, cardsFor, normalizeSelection,
   stageFromFilters, applyPayload, buildCountView, countsFromAgg, countSignature, summaryLabel,
 } from './dtpModel';
 import { DEFAULT_VIEW } from '../contract';
+
+/** Digit runs in a string, comma groups collapsed to one token
+    ("2,393" -> "2393"), so a chip's "76" cannot falsely match inside "2,076". */
+function numberTokens(text: string): Set<string> {
+  const matches = text.match(/\d[\d,]*\d|\d/g) ?? [];
+  return new Set(matches.map((m) => m.replace(/,/g, '')));
+}
 
 const CLASS_VALUES = [
   'YY (decline list)', 'NY (presumption against)', 'NS (case-by-case)',
@@ -21,12 +28,58 @@ describe('DTP_CONTENT', () => {
     expect(DTP_CONTENT.dtp_review.cards.map((c) => c.value).sort())
       .toEqual([...REVIEW_VALUES].sort());
   });
-  it('every card has non-empty plain text and at least one detail paragraph', () => {
+  it('every card has plain text over 20 characters and at least one detail paragraph', () => {
     for (const col of DTP_COLUMNS)
       for (const c of DTP_CONTENT[col].cards) {
         expect(c.plain.length).toBeGreaterThan(20);
-        expect(c.detail.length).toBeGreaterThan(0);
+        expect(c.detail.paragraphs.length).toBeGreaterThan(0);
       }
+  });
+  it('every fact chip has a non-empty label and a non-empty value', () => {
+    for (const col of DTP_COLUMNS)
+      for (const c of DTP_CONTENT[col].cards)
+        for (const f of c.detail.facts) {
+          expect(f.label.length).toBeGreaterThan(0);
+          expect(f.value.length).toBeGreaterThan(0);
+        }
+  });
+  it('no paragraph or plain sentence repeats a number that already appears in one of its own card’s fact chips', () => {
+    for (const col of DTP_COLUMNS)
+      for (const c of DTP_CONTENT[col].cards) {
+        const chipNumbers = new Set<string>();
+        for (const f of c.detail.facts)
+          for (const n of numberTokens(f.value)) chipNumbers.add(n);
+        const proseNumbers = new Set<string>();
+        for (const n of numberTokens(c.plain)) proseNumbers.add(n);
+        for (const p of c.detail.paragraphs)
+          for (const n of numberTokens(p)) proseNumbers.add(n);
+        for (const n of chipNumbers)
+          expect(proseNumbers.has(n)).toBe(false);
+      }
+  });
+});
+
+describe('DTP_HEADER', () => {
+  it('has plain text and a detail with no fact chips', () => {
+    expect(DTP_HEADER.plain.length).toBeGreaterThan(20);
+    expect(DTP_HEADER.detail.paragraphs.length).toBeGreaterThan(0);
+    expect(DTP_HEADER.detail.facts).toEqual([]);
+  });
+});
+
+describe('DTP_CAVEAT', () => {
+  it('carries the conflict-link label and no README/ruling citation', () => {
+    expect(DTP_CAVEAT.conflictLinkLabel).toBe('See the conflicting rows');
+    expect(DTP_CAVEAT.text).not.toMatch(/README/i);
+    expect(DTP_CAVEAT.text).not.toMatch(/ruling/i);
+  });
+});
+
+describe('MEMO_URL', () => {
+  it('is set to a verified stable archival URL (Task 3)', () => {
+    expect(MEMO_URL).not.toBeNull();
+    expect(MEMO_URL).toMatch(/^https:\/\//);
+    expect(MEMO_URL).toMatch(/web\.archive\.org/);
   });
 });
 
@@ -40,6 +93,7 @@ describe('cardsFor', () => {
     const bare = cards[cards.length - 1];
     expect(bare.value).toBe('ZZ (surprise)');
     expect(bare.plain).toBe('');           // bare card: no prose
+    expect(bare.detail).toEqual({ paragraphs: [], facts: [] });
     expect(cards).toHaveLength(6);
   });
   it('keeps a known card even when the data lacks its value (count will be 0)', () => {

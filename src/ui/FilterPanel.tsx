@@ -182,27 +182,31 @@ export default function FilterPanel({
                 onChange={(vals) => onSetFilter(c.name, vals)}
               />
             ))}
-            {g.label === 'Case' && (
-              <div className="ms dtp-entry">
-                <button
-                  className="ms-head"
-                  onClick={() => setDtpOpen(true)}
-                  aria-haspopup="dialog"
-                >
-                  <IconChevron open={false} />
-                  <span className="ms-label">Decline-to-prosecute</span>
-                  <span
-                    className={`ms-count${
-                      (view.filters.dtp_class?.length ?? 0) + (view.filters.dtp_review?.length ?? 0) > 0
-                        ? ' filtered'
-                        : ''
-                    }`}
+            {g.label === 'Case' && (() => {
+              const dtpActive =
+                (view.filters.dtp_class?.length ?? 0) + (view.filters.dtp_review?.length ?? 0) > 0;
+              return (
+                <div className="ms dtp-entry">
+                  <button
+                    className="entry-btn"
+                    onClick={() => setDtpOpen(true)}
+                    aria-haspopup="dialog"
                   >
-                    {truncate(summaryLabel(view.filters), 28)}
-                  </span>
-                </button>
-              </div>
-            )}
+                    <span className="entry-line1">
+                      <IconChevron open={false} />
+                      <span className={`entry-label${dtpActive ? ' filtered' : ''}`}>
+                        Decline-to-prosecute
+                        {dtpActive && <i className="entry-dot" aria-hidden="true" />}
+                      </span>
+                      {!dtpActive && <span className="ms-count">any</span>}
+                    </span>
+                    {dtpActive && (
+                      <span className="entry-summary">{summaryLabel(view.filters)}</span>
+                    )}
+                  </button>
+                </div>
+              );
+            })()}
           </section>
         ))}
 
