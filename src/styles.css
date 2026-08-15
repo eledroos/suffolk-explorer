@@ -2200,8 +2200,6 @@ input[type='date']:hover {
   padding-bottom: 0;
 }
 
-.chapter-modal { min-width: 0; }
-
 .chapter-search { width: 260px; max-width: 100%; }
 
 /* Reuses .tablewrap for the scroll frame (border, radius, overflow), same as

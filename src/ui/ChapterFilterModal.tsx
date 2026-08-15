@@ -72,7 +72,12 @@ export default function ChapterFilterModal({ ds, view, groupings, onSetFilter, o
     });
 
   const apply = () => {
-    onSetFilter(CHAPTER_COL, [...staged]);
+    // Mirror normalizeSeverity/normalizeSelection's "full selection -> []"
+    // convention locally: chapterModel exports no equivalent, but the
+    // domain to check against is the same dataValues list the row list
+    // already derives from distinctValues.
+    const allSelected = dataValues.every((v) => staged.has(v));
+    onSetFilter(CHAPTER_COL, allSelected ? [] : [...staged]);
     onClose();
   };
 
