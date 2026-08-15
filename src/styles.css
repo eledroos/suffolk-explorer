@@ -2267,3 +2267,49 @@ input[type='date']:hover {
 .chapter-row-link-empty { display: block; }
 
 .chapter-empty { padding: 16px 10px; }
+
+/* Narrow dialogs (phones; verified at 390px): the desktop grid gives the
+   title column whatever is left after count/bar/link's fixed widths, which
+   at 390px is only 70-100px. c. 276 carries the longest title in
+   CHAPTER_TITLES (129 characters) and wraps that into a single column over
+   240px tall, with count/bar/link stranded at its top. display: contents on
+   the two wrapper elements (.chapter-row-label, .chapter-row-text) removes
+   only their boxes, not the DOM - the checkbox stays inside <label> for its
+   native click-to-toggle association - so their children are promoted to
+   direct grid items of .chapter-row, and grid-template-areas can give the
+   title a full-width second row instead of a fifth of the first one, while
+   checkbox/value/count/bar/link stay on one stable first line above it. */
+@media (max-width: 560px) {
+  .chapter-row {
+    grid-template-columns: auto 1fr 46px 34px 26px;
+    grid-template-areas:
+      "check value count bar  link"
+      ".     title title title title";
+    column-gap: 6px;
+    row-gap: 2px;
+  }
+  .chapter-row-label,
+  .chapter-row-text {
+    display: contents;
+  }
+  .chapter-row-label input {
+    grid-area: check;
+    align-self: start;
+    margin-top: 3px;
+  }
+  .chapter-row-value {
+    grid-area: value;
+    align-self: center;
+    cursor: pointer;
+  }
+  .chapter-row-title {
+    grid-area: title;
+    cursor: pointer;
+  }
+  .chapter-row-count { grid-area: count; }
+  .chapter-row-bar { grid-area: bar; }
+  .chapter-row-link,
+  .chapter-row-link-empty {
+    grid-area: link;
+  }
+}

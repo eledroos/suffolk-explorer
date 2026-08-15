@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { aggregate, distinctValues } from '../engine';
 import type { Dataset, Grouping, ViewState } from '../contract';
 import { buildCountViewFor, countSignatureFor } from './modalCounts';
@@ -28,6 +28,21 @@ export default function ChapterFilterModal({ ds, view, groupings, onSetFilter, o
     () => new Set(view.filters[CHAPTER_COL] ?? []),
   );
   const [query, setQuery] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // React's `autoFocus` is a no-op here: it calls .focus() while this input
+  // is still inside a <dialog> that hasn't had showModal() called on it yet
+  // (display: none until then), so the call does nothing, and the browser's
+  // own dialog-focusing then lands on the header's Close button instead.
+  // Modal.tsx's own useEffect (which calls showModal()) sits on a fiber
+  // beneath this component in the tree - React fires effects child-before-
+  // parent, so by the time this effect runs the dialog is already open.
+  // requestAnimationFrame adds a one-frame margin past that so the focus
+  // call doesn't depend on getting that ordering exactly right.
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => searchRef.current?.focus());
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   // Every chapter value the loaded dataset carries, independent of the
   // current filters (same source DTP uses for its own dataValues).
@@ -130,13 +145,23 @@ export default function ChapterFilterModal({ ds, view, groupings, onSetFilter, o
         <p className="dtp-lede">{CHAPTER_PROVENANCE}</p>
 
         <input
+          ref={searchRef}
           type="search"
           className="chapter-search"
           placeholder="Search by chapter number or title"
           aria-label="Search statute chapters"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          autoFocus
+          onKeyDown={(e) => {
+            // A search input's native Escape behavior clears its value
+            // first and only closes the dialog on a second press. Cancel
+            // semantics (discard staged changes) on the first press instead,
+            // matching every other Escape path in this modal.
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              onClose();
+            }
+          }}
         />
 
         <div className="chapter-rows-wrap tablewrap">
