@@ -41,7 +41,7 @@ export const SEVERITY_CARDS: SeverityCard[] = [
   },
   {
     value: 'Misdemeanor',
-    blurb: 'Every other crime; the maximum sentence runs in a house of correction.',
+    blurb: 'Every other crime: anything not punishable by state prison.',
     detail: {
       paragraphs: [
         'Fine-only crimes are misdemeanors too. Unlicensed operation of a motor vehicle stays here rather than with the civil infractions because chapter 90C expressly keeps it a crime.',
