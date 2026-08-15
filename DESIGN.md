@@ -89,12 +89,15 @@ Deploys to Cloudflare Pages; data optionally served from R2 via `VITE_DATA_URL`.
     excluded from the generic MultiSelect list the same way `dtp_class`/
     `dtp_review` already were (`filterEntries.ts`'s `isDedicatedModalCol`).
     Because the pre-2022 dataset carries no real severity grading, `noticesFor`
-    (`src/engine/notices.ts`) emits an info notice, "Severity filter excludes
+    (`src/engine/notices.ts`, sourced from the `coverage.ts` registry like
+    every other notice) emits an info notice, "Severity filter excludes
     2006-2021," whenever a severity filter is active with history on and the
-    selection omits `"Not graded (pre-2022)"`; unlike the rest of this
-    section's notices this one is not a `CoverageEntry` in `coverage.ts`,
-    since it describes a filter/toggle interaction rather than a known
-    limitation of a source delivery.
+    selection omits `"Not graded (pre-2022)"`: a banner-only `CoverageEntry`
+    (`id: 'severity-excludes-history'`, no `band`) whose `when` clause reads
+    `view.filters.severity_class` and `view.history`, the same pattern
+    `superior-gap` (`when` reads `view.filters['court']`) and
+    `disp-2021-snapshot`/`both-lens-split-rows` (`when` reads `view.history`)
+    already established.
     Spec: `docs/specs/2026-08-15-severity-chapter-filters-design.md`.
     Ground truth: `docs/specs/severity-chapter-ground-truth.py` and its
     results file, run against the assembled CSVs independently of the

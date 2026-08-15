@@ -37,7 +37,7 @@ export const CHAPTER_TITLES: Record<string, string> = {
   '22E': 'State DNA Database',
   '270': 'Crimes Against Public Health',
   '85': 'Regulations and By-Laws Relative to Ways and Bridges',
-  '127': 'Officers and Inmates of Correctional Institutions. Paroles and Pardons',
+  '127': 'Officers and Inmates of Penal and Reformatory Institutions. Paroles and Pardons',
   '271': 'Crimes Against Public Policy',
   '159': 'Common Carriers',
   '101': 'Transient Vendors, Hawkers and Pedlers',
@@ -48,7 +48,7 @@ export const CHAPTER_TITLES: Record<string, string> = {
   '64C': 'Cigarette Excise',
   '160': 'Railroads',
   '119': 'Protection and Care of Children, and Proceedings Against Them',
-  '62C': 'Administration of Taxes',
+  '62C': 'Administrative Provisions Relative to State Taxation',
   '140D': 'Consumer Credit Cost Disclosure',
   '130': 'Marine Fish and Fisheries',
   '268A': 'Conduct of Public Officials and Employees',
@@ -57,6 +57,8 @@ export const CHAPTER_TITLES: Record<string, string> = {
   '118E': 'Division of Medical Assistance',
   '161': 'Street Railways',
   '90D': 'Motor Vehicle Certificates of Title',
+  // c. 234 (Juries) was repealed by St. 2016, c. 36; the title and link
+  // below remain valid for historical charges filed while it was in force.
   '234': 'Juries',
   '94G': 'Regulation of the Use and Distribution of Marijuana Not Medically Prescribed',
   '90C': 'Procedure for Motor Vehicle Offenses',

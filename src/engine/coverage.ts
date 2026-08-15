@@ -151,6 +151,25 @@ export const COVERAGE: CoverageEntry[] = [
     // With history on, the window opens in 2006, so this note would mislead.
     when: (view) => !view.history && rangeTouches(view, '2022-01-01', '2022-01-31'),
   },
+  {
+    // Banner-only (no band): this is not a date-range coverage gap, it is a
+    // consequence of combining the Severity filter with the history toggle.
+    // 'Not graded (pre-2022)' is severityModel.SEVERITY_HISTORY_VALUE; the
+    // literal is duplicated here rather than imported, same as courtInView's
+    // 'Suffolk Superior Court' above (engine/** does not import from ui/**,
+    // see DESIGN.md's module ownership).
+    id: 'severity-excludes-history',
+    lenses: ['filings', 'dispositions', 'all'],
+    short: 'Severity filter excludes 2006-2021',
+    detail:
+      'The pre-2022 dataset is not graded for severity, so an active severity filter excludes all of it. Select "Not graded (pre-2022)" in the Severity filter to include those charges.',
+    level: 'info',
+    banner: true,
+    when: (view) => {
+      const sel = view.filters['severity_class'] ?? [];
+      return view.history === true && sel.length > 0 && !sel.includes('Not graded (pre-2022)');
+    },
+  },
 ];
 
 function entryActive(e: CoverageEntry, view: ViewState, groupings: Grouping[]): boolean {
