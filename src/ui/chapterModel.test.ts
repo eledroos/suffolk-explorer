@@ -90,6 +90,12 @@ describe('miscoded tokens', () => {
     expect(chapterHref('c. 258')).toBeNull();
     expect(chapterHref('c. 279C')).toBeNull();
     expect(chapterHref('c. 269C')).toBeNull();
+    expect(chapterHref('c. 369')).toBeNull();
+  });
+  it('links only allowlisted verified tokens; unverified future tokens get none', () => {
+    expect(chapterHref('c. 92')).toContain('ChapterGoTo=92');
+    expect(chapterHref('c. 258B')).toContain('ChapterGoTo=258B');
+    expect(chapterHref('c. 999')).toBeNull();
   });
   it('still returns no title for them', () => {
     expect(chapterTitle('c. 258')).toBeNull();

@@ -85,17 +85,37 @@ export function chapterTitle(value: string): string | null {
 }
 
 /** Chapter tokens SCDAO's codes carry that are not the real statute's
-    chapter: 258 is truncated 258E (harassment prevention orders), and
-    279C / 269C are miscodings of c. 279 s. 25 and c. 269 s. 10. Linking
-    them would land on the wrong chapter (258) or an error page (279C,
-    269C), so they get no link and no title. */
-const MISCODED_TOKENS = new Set(['258', '279C', '269C']);
+    chapter: 258 is truncated 258E (harassment prevention orders), 279C /
+    269C are miscodings of c. 279 s. 25 and c. 269 s. 10, and 369 is a
+    legacy code with no such chapter. They get no link and no title. */
+const MISCODED_TOKENS = new Set(['258', '279C', '269C', '369']);
 
-/** null for NO_CODE_VALUE and miscoded tokens; otherwise the
+/** Every token here had its GoTo URL fetched against malegislature.gov on
+    2026-08-15 and confirmed to resolve to a real chapter page. Links are
+    allowlist-only: a token absent from this set renders WITHOUT a link
+    (the spec's rule is that a dead link never ships), so new tokens
+    arriving with future data are unlinked until someone verifies them
+    and adds them here. */
+const VERIFIED_TOKENS = new Set([
+  '1', '2', '6', '7', '9', '10', '12', '18', '21', '31', '33', '40', '42',
+  '46', '55', '56', '68', '6A', '81', '82', '85', '87', '89', '90', '91',
+  '92', '93', '94', '101', '102', '111', '112', '114', '118', '119', '120',
+  '126', '127', '130', '131', '138', '139', '140', '141', '143', '148',
+  '149', '151', '152', '155', '156', '159', '160', '161', '162', '164',
+  '166', '175', '181', '185', '186', '19A', '208', '218', '21A', '21C',
+  '21E', '221', '224', '22E', '233', '234', '264', '265', '266', '267',
+  '268', '269', '270', '271', '272', '273', '274', '275', '276', '28A',
+  '62C', '64C', '64F', '64K', '90B', '90C', '90D', '90F', '94C', '94G',
+  '111B', '111C', '118E', '119A', '128A', '140D', '142A', '151A', '151D',
+  '159A', '159B', '161A', '167A', '169A', '175E', '175H', '175I', '209A',
+  '234A', '255E', '258B', '267A', '268A', '268B',
+]);
+
+/** null for NO_CODE_VALUE and any unverified token; otherwise the
     malegislature.gov chapter link. */
 export function chapterHref(value: string): string | null {
   const token = tokenFromValue(value);
-  if (token === null || MISCODED_TOKENS.has(token)) return null;
+  if (token === null || !VERIFIED_TOKENS.has(token)) return null;
   return `https://malegislature.gov/Laws/GeneralLaws/GoTo?ChapterGoTo=${token}`;
 }
 
