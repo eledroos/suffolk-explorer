@@ -140,6 +140,7 @@ export default function SeverityFilterModal({ ds, view, groupings, onSetFilter, 
           </div>
         )}
 
+        <p className="dtp-denom">of {fmt(total)} charges in the current view</p>
         <ul className="dtp-cards">{cards.map(renderCard)}</ul>
         {!view.history && <p className="dtp-footnote">{SEVERITY_FOOTNOTE_NO_HISTORY}</p>}
 

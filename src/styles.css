@@ -2200,6 +2200,26 @@ input[type='date']:hover {
   padding-bottom: 0;
 }
 
+/* Denominator line: same anatomy slot and phrasing as the DTP tabs'
+   .dtp-denom ("of N charges in the current view"), so the card counts and
+   row counts carry the same context in all three modals. In the severity
+   modal it is a block of its own; the negative bottom margin closes the
+   14px column gap down to 8px so the annotation binds to the list it
+   describes, the same title-to-list distance .dtp-section-title keeps.
+   Element-scoped to <p>/.chapter-controls so the DTP modal's own span
+   inside .dtp-section-title cannot be touched. */
+p.dtp-denom { margin: 0; }
+.severity-modal > p.dtp-denom { margin-bottom: -6px; }
+
+/* Search row: the denominator sits in the dead space right of the input,
+   disappearing below it (left-aligned) when the row wraps at phone widths. */
+.chapter-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
 .chapter-search { width: 260px; max-width: 100%; }
 
 /* Reuses .tablewrap for the scroll frame (border, radius, overflow), same as
@@ -2210,14 +2230,16 @@ input[type='date']:hover {
 /* Row grid: checkbox+text | count | share bar | link button. align-items:
    start keeps the count/bar/link pinned to the row's first line when a long
    title wraps the text column onto a second line, instead of re-centering
-   on the row's full (now taller) height. */
+   on the row's full (now taller) height. The background transition matches
+   .dtp-card's 140ms hover/checked fade. */
 .chapter-row {
   display: grid;
-  grid-template-columns: 1fr 60px 84px 26px;
+  grid-template-columns: 1fr 60px 112px 26px;
   align-items: start;
   column-gap: 10px;
   padding: 7px 8px;
   border-radius: 6px;
+  transition: background-color 140ms ease;
 }
 .chapter-row:hover { background: color-mix(in srgb, var(--grid) 40%, transparent); }
 .chapter-row.on { background: color-mix(in srgb, var(--accent) 6%, transparent); }
@@ -2239,16 +2261,25 @@ input[type='date']:hover {
   overflow-wrap: break-word;
 }
 
+/* Count typography matches .dtp-card-count: weight 500 at rest, and the
+   checked state shifts color only, so the digits never change width. */
 .chapter-row-count {
   justify-self: end;
   padding-top: 1px;
   font-variant-numeric: tabular-nums;
+  font-weight: 500;
   color: var(--ink2);
 }
-.chapter-row.on .chapter-row-count { color: var(--ink1); font-weight: 600; }
+.chapter-row.on .chapter-row-count { color: var(--ink1); }
 
+/* The bar and the link icon belong to the count's line: with align-items:
+   start on the row, the margins below place both on the first line's
+   optical center (the count's text centerline sits ~9.5px into the row
+   content box), instead of the bar drifting to the middle of a two-line
+   row while the count stays on line one. */
 .chapter-row-bar {
-  align-self: center;
+  align-self: start;
+  margin-top: 8px;
   height: 3px;
   border-radius: 2px;
   background: color-mix(in srgb, var(--axis) 30%, transparent);
@@ -2263,7 +2294,7 @@ input[type='date']:hover {
 }
 .chapter-row.on .chapter-row-bar span { background: var(--accent); }
 
-.chapter-row-link { flex: none; align-self: start; }
+.chapter-row-link { flex: none; align-self: start; margin-top: -3px; }
 .chapter-row-link-empty { display: block; }
 
 .chapter-empty { padding: 16px 10px; }
@@ -2307,9 +2338,17 @@ input[type='date']:hover {
     cursor: pointer;
   }
   .chapter-row-count { grid-area: count; }
-  .chapter-row-bar { grid-area: bar; }
+  /* The narrow grid's first row is one shared track (the 26px link button
+     sets its height), so the desktop first-line offsets come back off and
+     the bar recenters in the track instead. */
+  .chapter-row-bar {
+    grid-area: bar;
+    align-self: center;
+    margin-top: 0;
+  }
   .chapter-row-link,
   .chapter-row-link-empty {
     grid-area: link;
+    margin-top: 0;
   }
 }
