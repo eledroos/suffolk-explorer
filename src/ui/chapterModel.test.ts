@@ -76,7 +76,10 @@ describe('chapterSummary', () => {
   it('names a single selection', () => {
     expect(chapterSummary(['c. 265'])).toBe('c. 265');
   });
-  it('counts past a single selection like severitySummary', () => {
+  it('joins both names for two selections, like severitySummary', () => {
+    expect(chapterSummary(['c. 265', 'c. 267'])).toBe('c. 265 + c. 267');
+  });
+  it('counts past two selections', () => {
     expect(chapterSummary(['c. 265', 'c. 267', 'c. 94C'])).toBe('c. 265 + 2 more');
   });
 });

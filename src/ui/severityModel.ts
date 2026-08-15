@@ -99,10 +99,14 @@ export const SEVERITY_HEADER: { paragraphs: string[]; links: SeverityLink[] } = 
 export const SEVERITY_FOOTNOTE_NO_HISTORY: string =
   'The 2006-2021 dataset is not graded for severity; turn on "Include 2006-2021" to see it listed here.';
 
-/** 'Felony' | 'Felony + 2 more'. Mirrors chapterSummary's shape. */
+/** 'Felony' | 'Felony + Misdemeanor' | 'Felony + 2 more'. Mirrors
+    chapterSummary's shape and dtpModel.summaryLabel's two-selection
+    behavior: two selections join both names; three or more collapse to a
+    count. */
 export function severitySummary(selected: string[]): string {
   if (selected.length === 0) return 'any';
   if (selected.length === 1) return selected[0];
+  if (selected.length === 2) return `${selected[0]} + ${selected[1]}`;
   return `${selected[0]} + ${selected.length - 1} more`;
 }
 

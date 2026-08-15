@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { distinctValues } from '../engine';
 import { COLUMNS, LENS_INFO, type Dataset, type Grouping, type ViewState } from '../contract';
+import { CHAPTER_COL, chapterSummary } from './chapterModel';
+import ChapterFilterModal from './ChapterFilterModal';
 import DtpFilterModal from './DtpFilterModal';
 import { summaryLabel } from './dtpModel';
+import { isDedicatedModalCol, singleColEntryActive } from './filterEntries';
 import { colLabel, displayValue, truncate } from './format';
 import { IconChevron, IconClose } from './icons';
 import MultiSelect from './MultiSelect';
+import { SEVERITY_COL, severitySummary } from './severityModel';
+import SeverityFilterModal from './SeverityFilterModal';
 
 /** Filter sections, chunked so substantive dimensions outrank provenance.
     Any filterable column not named here lands in the last group. */
@@ -38,13 +43,16 @@ export default function FilterPanel({
   onClearAll,
   onClose,
 }: FilterPanelProps) {
-  // dtp_class/dtp_review are filterable columns but are surfaced through the
-  // dedicated Decline-to-prosecute modal entry below, not a generic MultiSelect.
+  // dtp_class/dtp_review/severity_class/statute_chapter are filterable
+  // columns but each is surfaced through its own dedicated modal entry
+  // below, not a generic MultiSelect.
   const filterCols = COLUMNS.filter(
-    (c) => c.filterable && c.kind === 'cat' && c.name !== 'dtp_class' && c.name !== 'dtp_review',
+    (c) => c.filterable && c.kind === 'cat' && !isDedicatedModalCol(c.name),
   );
   const dateLabel = colLabel(LENS_INFO[view.lens].dateField);
   const [dtpOpen, setDtpOpen] = useState(false);
+  const [severityOpen, setSeverityOpen] = useState(false);
+  const [chapterOpen, setChapterOpen] = useState(false);
 
   // Columns grouped for scanability; anything unlisted falls into a trailing group.
   const named = new Set(FILTER_GROUPS.flatMap((g) => g.cols));
@@ -185,26 +193,72 @@ export default function FilterPanel({
             {g.label === 'Case' && (() => {
               const dtpActive =
                 (view.filters.dtp_class?.length ?? 0) + (view.filters.dtp_review?.length ?? 0) > 0;
+              const severityActive = singleColEntryActive(view.filters, SEVERITY_COL);
+              const chapterActive = singleColEntryActive(view.filters, CHAPTER_COL);
               return (
-                <div className="ms dtp-entry">
-                  <button
-                    className="entry-btn"
-                    onClick={() => setDtpOpen(true)}
-                    aria-haspopup="dialog"
-                  >
-                    <span className="entry-line1">
-                      <IconChevron open={false} />
-                      <span className={`entry-label${dtpActive ? ' filtered' : ''}`}>
-                        Decline-to-prosecute
-                        {dtpActive && <i className="entry-dot" aria-hidden="true" />}
+                <>
+                  <div className="ms dtp-entry">
+                    <button
+                      className="entry-btn"
+                      onClick={() => setDtpOpen(true)}
+                      aria-haspopup="dialog"
+                    >
+                      <span className="entry-line1">
+                        <IconChevron open={false} />
+                        <span className={`entry-label${dtpActive ? ' filtered' : ''}`}>
+                          Decline-to-prosecute
+                          {dtpActive && <i className="entry-dot" aria-hidden="true" />}
+                        </span>
+                        {!dtpActive && <span className="ms-count">any</span>}
                       </span>
-                      {!dtpActive && <span className="ms-count">any</span>}
-                    </span>
-                    {dtpActive && (
-                      <span className="entry-summary">{summaryLabel(view.filters)}</span>
-                    )}
-                  </button>
-                </div>
+                      {dtpActive && (
+                        <span className="entry-summary">{summaryLabel(view.filters)}</span>
+                      )}
+                    </button>
+                  </div>
+                  <div className="ms dtp-entry">
+                    <button
+                      className="entry-btn"
+                      onClick={() => setSeverityOpen(true)}
+                      aria-haspopup="dialog"
+                    >
+                      <span className="entry-line1">
+                        <IconChevron open={false} />
+                        <span className={`entry-label${severityActive ? ' filtered' : ''}`}>
+                          Severity
+                          {severityActive && <i className="entry-dot" aria-hidden="true" />}
+                        </span>
+                        {!severityActive && <span className="ms-count">any</span>}
+                      </span>
+                      {severityActive && (
+                        <span className="entry-summary">
+                          {severitySummary(view.filters[SEVERITY_COL] ?? [])}
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                  <div className="ms dtp-entry">
+                    <button
+                      className="entry-btn"
+                      onClick={() => setChapterOpen(true)}
+                      aria-haspopup="dialog"
+                    >
+                      <span className="entry-line1">
+                        <IconChevron open={false} />
+                        <span className={`entry-label${chapterActive ? ' filtered' : ''}`}>
+                          Statute chapter
+                          {chapterActive && <i className="entry-dot" aria-hidden="true" />}
+                        </span>
+                        {!chapterActive && <span className="ms-count">any</span>}
+                      </span>
+                      {chapterActive && (
+                        <span className="entry-summary">
+                          {chapterSummary(view.filters[CHAPTER_COL] ?? [])}
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                </>
               );
             })()}
           </section>
@@ -233,6 +287,24 @@ export default function FilterPanel({
           groupings={groupings}
           onSetFilter={onSetFilter}
           onClose={() => setDtpOpen(false)}
+        />
+      )}
+      {severityOpen && (
+        <SeverityFilterModal
+          ds={ds}
+          view={view}
+          groupings={groupings}
+          onSetFilter={onSetFilter}
+          onClose={() => setSeverityOpen(false)}
+        />
+      )}
+      {chapterOpen && (
+        <ChapterFilterModal
+          ds={ds}
+          view={view}
+          groupings={groupings}
+          onSetFilter={onSetFilter}
+          onClose={() => setChapterOpen(false)}
         />
       )}
     </>

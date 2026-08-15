@@ -88,10 +88,14 @@ export function chapterHref(value: string): string | null {
   return `https://malegislature.gov/Laws/GeneralLaws/GoTo?ChapterGoTo=${token}`;
 }
 
-/** 'c. 265' | 'c. 265 + 2 more'. Mirrors severitySummary's shape. */
+/** 'c. 265' | 'c. 265 + c. 267' | 'c. 265 + 2 more'. Mirrors
+    severitySummary's shape and dtpModel.summaryLabel's two-selection
+    behavior: two selections join both names; three or more collapse to a
+    count. */
 export function chapterSummary(selected: string[]): string {
   if (selected.length === 0) return 'any';
   if (selected.length === 1) return selected[0];
+  if (selected.length === 2) return `${selected[0]} + ${selected[1]}`;
   return `${selected[0]} + ${selected.length - 1} more`;
 }
 

@@ -73,6 +73,32 @@ Deploys to Cloudflare Pages; data optionally served from R2 via `VITE_DATA_URL`.
     Apply/Cancel, MultiSelect-identical normalization, two-line sidebar entry.
     Specs: `docs/specs/2026-08-12-dtp-filter-modal-design.md` (v1) and
     `docs/specs/2026-08-13-dtp-modal-v2-design.md` (v2).
+12. **Severity and statute-chapter filters:** two more charge-level columns,
+    `severity_class` (Felony / Misdemeanor / Civil infraction / Unclassified,
+    graded from the Feb 2026 Sentencing Commission Master Crime List, plus the
+    constant `"Not graded (pre-2022)"` on every history row rather than a
+    null, so the 2006-2021 dataset stays visible instead of silently
+    vanishing from a severity chart or filter) and `statute_chapter` (the MGL
+    chapter parsed from `charge_code`, "c. 265" style, or `"No statute code"`
+    for catch-all and legacy codes). Each gets its own Case-group entry in
+    `FilterPanel.tsx`, reusing the Decline-to-prosecute entry's exact
+    dtp-entry markup and staged Apply/Cancel modal pattern rather than a new
+    one: `SeverityFilterModal.tsx` (card list, `severityModel.ts`) and
+    `ChapterFilterModal.tsx` (searchable, sorted-by-count list with
+    malegislature.gov links, `chapterModel.ts`). Both columns are also
+    excluded from the generic MultiSelect list the same way `dtp_class`/
+    `dtp_review` already were (`filterEntries.ts`'s `isDedicatedModalCol`).
+    Because the pre-2022 dataset carries no real severity grading, `noticesFor`
+    (`src/engine/notices.ts`) emits an info notice, "Severity filter excludes
+    2006-2021," whenever a severity filter is active with history on and the
+    selection omits `"Not graded (pre-2022)"`; unlike the rest of this
+    section's notices this one is not a `CoverageEntry` in `coverage.ts`,
+    since it describes a filter/toggle interaction rather than a known
+    limitation of a source delivery.
+    Spec: `docs/specs/2026-08-15-severity-chapter-filters-design.md`.
+    Ground truth: `docs/specs/severity-chapter-ground-truth.py` and its
+    results file, run against the assembled CSVs independently of the
+    parquet build.
 
 ## Data and tooling
 

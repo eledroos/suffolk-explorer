@@ -52,8 +52,8 @@ describe('severitySummary', () => {
   it('names a single selection', () => {
     expect(severitySummary(['Felony'])).toBe('Felony');
   });
-  it('names the first value plus a count for two selections', () => {
-    expect(severitySummary(['Felony', 'Misdemeanor'])).toBe('Felony + 1 more');
+  it('joins both names for two selections', () => {
+    expect(severitySummary(['Felony', 'Misdemeanor'])).toBe('Felony + Misdemeanor');
   });
   it('counts past two selections', () => {
     expect(severitySummary(['Felony', 'Misdemeanor', 'Unclassified'])).toBe('Felony + 2 more');
