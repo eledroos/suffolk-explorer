@@ -156,9 +156,18 @@ export default function ChapterFilterModal({ ds, view, groupings, onSetFilter, o
             // A search input's native Escape behavior clears its value
             // first and only closes the dialog on a second press. Cancel
             // semantics (discard staged changes) on the first press instead,
-            // matching every other Escape path in this modal.
+            // matching every other Escape path in this modal. stopPropagation
+            // keeps this same keydown from also reaching FilterPanel's
+            // window-level Escape listener: that listener closes the Filters
+            // drawer, guarded by "bail if a dialog[open] exists" - but by the
+            // time it runs, onClose() has already unmounted this dialog, so
+            // the guard passes and the drawer closes too. Stopping
+            // propagation here means the drawer never sees this keypress at
+            // all, same as it never sees an Escape handled by the dialog's
+            // own native cancel path.
             if (e.key === 'Escape') {
               e.preventDefault();
+              e.stopPropagation();
               onClose();
             }
           }}
