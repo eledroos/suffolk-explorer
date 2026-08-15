@@ -43,10 +43,11 @@ generic over cat columns).
     repo's documented NULL trap, while an explicit value keeps the 1.09M
     history rows visible and honestly labeled.
 - `statute_chapter` (both files): derived from `charge_code` by one rule,
-  identical in both prep scripts: `^([0-9]+[A-Z]?)/` on the trimmed code →
-  "c. " + token; no match → **"No statute code"**. MassCourts dot-codes and
-  catch-all codes (666666 etc.) land in "No statute code" by design; the
-  rule is documented in both scripts. Display-ready values in the parquet
+  identical in both prep scripts: `^([0-9]+[A-Z]?)[/.]` on the trimmed
+  code → "c. " + token; no match → **"No statute code"**. (Amended during
+  the build: the pre-2022 file cites most codes in MassCourts dot format,
+  so the rule accepts both separators; only catch-all and legacy codes
+  land in "No statute code".) Display-ready values in the parquet
   follow the existing `filing_source` precedent ("Oct 2024 delivery").
 - The Hayden CSV's `severity_source`, `mcl_offense_level`,
   `mcl_mandatory_time` also get dictionary encoding in prepare_data.py (they
