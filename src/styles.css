@@ -2182,3 +2182,90 @@ input[type='date']:hover {
   .dtp-tabs .seg-opt { padding: 5px 3px; font-size: 11px; }
   .dtp-tab-badge { margin-left: 3px; font-size: 10px; }
 }
+
+/* severity + chapter filter modals (SeverityFilterModal.tsx,
+   ChapterFilterModal.tsx). Both wrap their content in .dtp-modal and reuse
+   .dtp-lede / .dtp-more / .dtp-links / .dtp-link / .dtp-actions verbatim by
+   composition; the severity cards below reuse .dtp-cards / .dtp-card /
+   .dtp-bar too, since a severity card is a DTP card in every way that
+   matters. Only the chapter row list, which is a compact one-line-per-value
+   grid rather than a card stack, needs new markup. */
+.modal-wide:has(.severity-modal) { width: min(654px, 94vw); }
+.modal-wide:has(.chapter-modal) { width: min(760px, 96vw); }
+/* Same fix as the DTP tabs: the sticky Apply/Cancel row supplies its own
+   bottom padding so it can bleed to the dialog's edges, so the scrolling
+   body must not add a second helping under it. */
+.modal-wide:has(.severity-modal) .modal-body,
+.modal-wide:has(.chapter-modal) .modal-body {
+  padding-bottom: 0;
+}
+
+.chapter-modal { min-width: 0; }
+
+.chapter-search { width: 260px; max-width: 100%; }
+
+/* Reuses .tablewrap for the scroll frame (border, radius, overflow), same as
+   the DTP browse table; the max-height override matches its rule too. */
+.chapter-rows-wrap { max-height: 52vh; }
+.chapter-rows { list-style: none; margin: 0; padding: 4px; display: flex; flex-direction: column; }
+
+/* Row grid: checkbox+text | count | share bar | link button. align-items:
+   start keeps the count/bar/link pinned to the row's first line when a long
+   title wraps the text column onto a second line, instead of re-centering
+   on the row's full (now taller) height. */
+.chapter-row {
+  display: grid;
+  grid-template-columns: 1fr 60px 84px 26px;
+  align-items: start;
+  column-gap: 10px;
+  padding: 7px 8px;
+  border-radius: 6px;
+}
+.chapter-row:hover { background: color-mix(in srgb, var(--grid) 40%, transparent); }
+.chapter-row.on { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+
+.chapter-row-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  cursor: pointer;
+}
+.chapter-row-label input { flex: none; margin-top: 2px; }
+.chapter-row-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.chapter-row-value { font-weight: 600; font-size: 12.5px; }
+.chapter-row-title {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--ink3);
+  overflow-wrap: break-word;
+}
+
+.chapter-row-count {
+  justify-self: end;
+  padding-top: 1px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink2);
+}
+.chapter-row.on .chapter-row-count { color: var(--ink1); font-weight: 600; }
+
+.chapter-row-bar {
+  align-self: center;
+  height: 3px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--axis) 30%, transparent);
+  overflow: hidden;
+}
+.chapter-row-bar span {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  background: color-mix(in srgb, var(--accent) 70%, transparent);
+  border-radius: 2px;
+}
+.chapter-row.on .chapter-row-bar span { background: var(--accent); }
+
+.chapter-row-link { flex: none; align-self: start; }
+.chapter-row-link-empty { display: block; }
+
+.chapter-empty { padding: 16px 10px; }
