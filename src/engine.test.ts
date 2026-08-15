@@ -417,6 +417,35 @@ describe('noticesFor (DESIGN.md section 6)', () => {
     const later = noticesFor(view({ lens: 'dispositions', dateFrom: '2022-02-01' }), []);
     expect(later.some((n) => n.detail.includes('Jan 3, 2022'))).toBe(false);
   });
+
+  it('warns that an active severity filter excludes the pre-2022 dataset, only with history on', () => {
+    const withHistoryAndFilter = noticesFor(
+      view({ history: true, filters: { severity_class: ['Felony'] } }),
+      [],
+    );
+    expect(
+      withHistoryAndFilter.some(
+        (n) => n.level === 'info' && n.title === 'Severity filter excludes 2006-2021',
+      ),
+    ).toBe(true);
+
+    const historyOff = noticesFor(view({ history: false, filters: { severity_class: ['Felony'] } }), []);
+    expect(historyOff.some((n) => n.title === 'Severity filter excludes 2006-2021')).toBe(false);
+
+    const noFilter = noticesFor(view({ history: true, filters: {} }), []);
+    expect(noFilter.some((n) => n.title === 'Severity filter excludes 2006-2021')).toBe(false);
+
+    const includesNotGraded = noticesFor(
+      view({
+        history: true,
+        filters: { severity_class: ['Felony', 'Not graded (pre-2022)'] },
+      }),
+      [],
+    );
+    expect(
+      includesNotGraded.some((n) => n.title === 'Severity filter excludes 2006-2021'),
+    ).toBe(false);
+  });
 });
 
 describe('groupings persistence', () => {

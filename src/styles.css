@@ -2182,3 +2182,173 @@ input[type='date']:hover {
   .dtp-tabs .seg-opt { padding: 5px 3px; font-size: 11px; }
   .dtp-tab-badge { margin-left: 3px; font-size: 10px; }
 }
+
+/* severity + chapter filter modals (SeverityFilterModal.tsx,
+   ChapterFilterModal.tsx). Both wrap their content in .dtp-modal and reuse
+   .dtp-lede / .dtp-more / .dtp-links / .dtp-link / .dtp-actions verbatim by
+   composition; the severity cards below reuse .dtp-cards / .dtp-card /
+   .dtp-bar too, since a severity card is a DTP card in every way that
+   matters. Only the chapter row list, which is a compact one-line-per-value
+   grid rather than a card stack, needs new markup. */
+.modal-wide:has(.severity-modal) { width: min(654px, 94vw); }
+.modal-wide:has(.chapter-modal) { width: min(760px, 96vw); }
+/* Same fix as the DTP tabs: the sticky Apply/Cancel row supplies its own
+   bottom padding so it can bleed to the dialog's edges, so the scrolling
+   body must not add a second helping under it. */
+.modal-wide:has(.severity-modal) .modal-body,
+.modal-wide:has(.chapter-modal) .modal-body {
+  padding-bottom: 0;
+}
+
+/* Denominator line: same anatomy slot and phrasing as the DTP tabs'
+   .dtp-denom ("of N charges in the current view"), so the card counts and
+   row counts carry the same context in all three modals. In the severity
+   modal it is a block of its own; the negative bottom margin closes the
+   14px column gap down to 8px so the annotation binds to the list it
+   describes, the same title-to-list distance .dtp-section-title keeps.
+   Element-scoped to <p>/.chapter-controls so the DTP modal's own span
+   inside .dtp-section-title cannot be touched. */
+p.dtp-denom { margin: 0; }
+.severity-modal > p.dtp-denom { margin-bottom: -6px; }
+
+/* Search row: the denominator sits in the dead space right of the input,
+   disappearing below it (left-aligned) when the row wraps at phone widths. */
+.chapter-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+.chapter-search { width: 260px; max-width: 100%; }
+
+/* Reuses .tablewrap for the scroll frame (border, radius, overflow), same as
+   the DTP browse table; the max-height override matches its rule too. */
+.chapter-rows-wrap { max-height: 52vh; }
+.chapter-rows { list-style: none; margin: 0; padding: 4px; display: flex; flex-direction: column; }
+
+/* Row grid: checkbox+text | count | share bar | link button. align-items:
+   start keeps the count/bar/link pinned to the row's first line when a long
+   title wraps the text column onto a second line, instead of re-centering
+   on the row's full (now taller) height. The background transition matches
+   .dtp-card's 140ms hover/checked fade. */
+.chapter-row {
+  display: grid;
+  grid-template-columns: 1fr 60px 112px 26px;
+  align-items: start;
+  column-gap: 10px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  transition: background-color 140ms ease;
+}
+.chapter-row:hover { background: color-mix(in srgb, var(--grid) 40%, transparent); }
+.chapter-row.on { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+
+.chapter-row-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  cursor: pointer;
+}
+.chapter-row-label input { flex: none; margin-top: 2px; }
+.chapter-row-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.chapter-row-value { font-weight: 600; font-size: 12.5px; }
+.chapter-row-title {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--ink3);
+  overflow-wrap: break-word;
+}
+
+/* Count typography matches .dtp-card-count: weight 500 at rest, and the
+   checked state shifts color only, so the digits never change width. */
+.chapter-row-count {
+  justify-self: end;
+  padding-top: 1px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--ink2);
+}
+.chapter-row.on .chapter-row-count { color: var(--ink1); }
+
+/* The bar and the link icon belong to the count's line: with align-items:
+   start on the row, the margins below place both on the first line's
+   optical center (the count's text centerline sits ~9.5px into the row
+   content box), instead of the bar drifting to the middle of a two-line
+   row while the count stays on line one. */
+.chapter-row-bar {
+  align-self: start;
+  margin-top: 8px;
+  height: 3px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--axis) 30%, transparent);
+  overflow: hidden;
+}
+.chapter-row-bar span {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  background: color-mix(in srgb, var(--accent) 70%, transparent);
+  border-radius: 2px;
+}
+.chapter-row.on .chapter-row-bar span { background: var(--accent); }
+
+.chapter-row-link { flex: none; align-self: start; margin-top: -3px; }
+.chapter-row-link-empty { display: block; }
+
+.chapter-empty { padding: 16px 10px; }
+
+/* Narrow dialogs (phones; verified at 390px): the desktop grid gives the
+   title column whatever is left after count/bar/link's fixed widths, which
+   at 390px is only 70-100px. c. 276 carries the longest title in
+   CHAPTER_TITLES (129 characters) and wraps that into a single column over
+   240px tall, with count/bar/link stranded at its top. display: contents on
+   the two wrapper elements (.chapter-row-label, .chapter-row-text) removes
+   only their boxes, not the DOM - the checkbox stays inside <label> for its
+   native click-to-toggle association - so their children are promoted to
+   direct grid items of .chapter-row, and grid-template-areas can give the
+   title a full-width second row instead of a fifth of the first one, while
+   checkbox/value/count/bar/link stay on one stable first line above it. */
+@media (max-width: 560px) {
+  .chapter-row {
+    grid-template-columns: auto 1fr 46px 34px 26px;
+    grid-template-areas:
+      "check value count bar  link"
+      ".     title title title title";
+    column-gap: 6px;
+    row-gap: 2px;
+  }
+  .chapter-row-label,
+  .chapter-row-text {
+    display: contents;
+  }
+  .chapter-row-label input {
+    grid-area: check;
+    align-self: start;
+    margin-top: 3px;
+  }
+  .chapter-row-value {
+    grid-area: value;
+    align-self: center;
+    cursor: pointer;
+  }
+  .chapter-row-title {
+    grid-area: title;
+    cursor: pointer;
+  }
+  .chapter-row-count { grid-area: count; }
+  /* The narrow grid's first row is one shared track (the 26px link button
+     sets its height), so the desktop first-line offsets come back off and
+     the bar recenters in the track instead. */
+  .chapter-row-bar {
+    grid-area: bar;
+    align-self: center;
+    margin-top: 0;
+  }
+  .chapter-row-link,
+  .chapter-row-link-empty {
+    grid-area: link;
+    margin-top: 0;
+  }
+}
