@@ -45,6 +45,13 @@ export const COLUMNS: ColumnDef[] = [
   // The YY REVIEW tab's three tiers: the operative decline list, the working
   // group's agreed-but-never-adopted expansion, and the disagreed set.
   { name: 'dtp_review',              label: 'Decline-list review status', kind: 'cat', filterable: true, groupable: true },
+  // Added by the 2026-08-15 severity/chapter spec (sanctioned contract
+  // change). severity_class comes from the Feb 2026 Master Crime List
+  // mapping in ../assembled/severity/; history rows carry the explicit
+  // value 'Not graded (pre-2022)'. statute_chapter is parsed from
+  // charge_code at parquet build; unparseable codes are 'No statute code'.
+  { name: 'severity_class',          label: 'Severity',                kind: 'cat',  filterable: true,  groupable: true  },
+  { name: 'statute_chapter',         label: 'Statute chapter',         kind: 'cat',  filterable: true,  groupable: true  },
   { name: 'case_disposition_status', label: 'Case disposition status', kind: 'cat',  filterable: true,  groupable: true  },
   { name: 'filed_in_window',         label: 'Filed in 2022-2025',      kind: 'bool', filterable: false, groupable: false },
   { name: 'disposed_in_window',      label: 'Disposed in 2022-2025',   kind: 'bool', filterable: false, groupable: false },

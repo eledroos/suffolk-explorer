@@ -24,13 +24,42 @@ BOOLS = ["filed_in_window", "disposed_in_window"]
 CATS = ["charge_code", "crime_type", "court", "race", "sex", "agency",
         "disposition_code", "disposition_description", "disposition_reason",
         "case_status", "filing_source", "disposition_source",
-        "filed_under", "disposed_under", "outcome_class", "prosecutorial_call", "dtp_class", "dtp_review", "outcome_detail", "case_disposition_status"]
+        "filed_under", "disposed_under", "outcome_class", "prosecutorial_call", "dtp_class", "dtp_review", "outcome_detail", "case_disposition_status",
+        "severity_class", "severity_source", "mcl_offense_level", "mcl_mandatory_time",
+        "statute_chapter"]
+
+# The one derivation this script performs: the MGL chapter out of the charge
+# code ("266/30/C" -> "c. 266"). Codes with no leading chapter/section shape
+# (MassCourts dot-codes, 666666-style catch-alls) become "No statute code".
+# The identical rule lives in prepare_history.py; the gate below recounts it
+# independently.
+# Two code formats appear: DAMION slash codes ("266/30/C") and MassCourts
+# dot codes ("265.13A"); the chapter is the token before the first separator.
+CHAPTER_RE = r"^([0-9]+[A-Z]?)[/.]"
 
 df = pd.read_csv(CSV, dtype={"icr": "string", "charge_code": "string", "agency": "string"})
 for c in DATES:
     df[c] = pd.to_datetime(df[c], errors="coerce")
 for c in INTS:
     df[c] = pd.to_numeric(df[c], errors="coerce").astype("Int64")
+
+chap = df["charge_code"].fillna("").str.strip().str.extract(CHAPTER_RE, expand=False)
+df["statute_chapter"] = ("c. " + chap).fillna("No statute code")
+
+# Gates: fail loudly rather than write a wrong parquet.
+sev = df["severity_class"].astype("string")
+if sev.isna().any() or (sev == "").any():
+    raise SystemExit(f"GATE FAIL: {int(sev.isna().sum() + (sev == '').sum())} rows lack severity_class")
+allowed = {"Felony", "Misdemeanor", "Civil infraction", "Unclassified"}
+bad = set(sev.unique()) - allowed
+if bad:
+    raise SystemExit(f"GATE FAIL: unexpected severity_class values {bad}")
+import re as _re
+recount = sum(1 for v in df["charge_code"].fillna("") if not _re.match(CHAPTER_RE, v.strip()))
+got = int((df["statute_chapter"] == "No statute code").sum())
+if recount != got:
+    raise SystemExit(f"GATE FAIL: No-statute-code recount {recount} != column {got}")
+print(f"gates ok: severity {dict(sev.value_counts())}; no-statute-code {got:,}")
 
 arrs = {}
 for c in df.columns:
