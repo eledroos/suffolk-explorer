@@ -2,8 +2,9 @@
  * Pure logic + copy for the statute-chapter filter modal. No React. Chapter
  * titles are transcribed verbatim from the 2026-08-15 severity/chapter spec;
  * every entry is subject to the content-verification pass, which removes
- * anything it cannot verify. c. 258 and c. 279C are deliberately absent:
- * SCDAO truncates 258E to 258 and miscodes 279 as 279C, so a real chapter
+ * anything it cannot verify. c. 258, c. 279C and c. 269C are deliberately
+ * absent and unlinked (see MISCODED_TOKENS): SCDAO truncates 258E to 258
+ * and miscodes 279 as 279C and 269 as 269C, so a real chapter
  * title there would mislead.
  */
 
@@ -83,10 +84,18 @@ export function chapterTitle(value: string): string | null {
   return CHAPTER_TITLES[token] ?? null;
 }
 
-/** null for NO_CODE_VALUE; otherwise the malegislature.gov chapter link. */
+/** Chapter tokens SCDAO's codes carry that are not the real statute's
+    chapter: 258 is truncated 258E (harassment prevention orders), and
+    279C / 269C are miscodings of c. 279 s. 25 and c. 269 s. 10. Linking
+    them would land on the wrong chapter (258) or an error page (279C,
+    269C), so they get no link and no title. */
+const MISCODED_TOKENS = new Set(['258', '279C', '269C']);
+
+/** null for NO_CODE_VALUE and miscoded tokens; otherwise the
+    malegislature.gov chapter link. */
 export function chapterHref(value: string): string | null {
   const token = tokenFromValue(value);
-  if (token === null) return null;
+  if (token === null || MISCODED_TOKENS.has(token)) return null;
   return `https://malegislature.gov/Laws/GeneralLaws/GoTo?ChapterGoTo=${token}`;
 }
 

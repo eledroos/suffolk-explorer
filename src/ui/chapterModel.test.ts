@@ -83,3 +83,17 @@ describe('chapterSummary', () => {
     expect(chapterSummary(['c. 265', 'c. 267', 'c. 94C'])).toBe('c. 265 + 2 more');
   });
 });
+
+
+describe('miscoded tokens', () => {
+  it('returns no link for the truncated and miscoded chapter tokens', () => {
+    expect(chapterHref('c. 258')).toBeNull();
+    expect(chapterHref('c. 279C')).toBeNull();
+    expect(chapterHref('c. 269C')).toBeNull();
+  });
+  it('still returns no title for them', () => {
+    expect(chapterTitle('c. 258')).toBeNull();
+    expect(chapterTitle('c. 279C')).toBeNull();
+    expect(chapterTitle('c. 269C')).toBeNull();
+  });
+});

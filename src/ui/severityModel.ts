@@ -85,7 +85,7 @@ export const SEVERITY_HEADER: { paragraphs: string[]; links: SeverityLink[] } = 
   links: [
     {
       label: 'The Master Crime List (mass.gov)',
-      href: 'https://www.mass.gov/lists/sentencing-commission-master-crime-list',
+      href: 'https://www.mass.gov/doc/master-crime-list',
       external: true,
     },
     {
